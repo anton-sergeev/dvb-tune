@@ -23,6 +23,8 @@
 //#define SYS_DVBC_ANNEX_A SYS_DVBC_ANNEX_AC
 //#endif
 
+#define ARRAY_SIZE(arr)	(sizeof(arr) / sizeof(arr[0]))
+
 /******************************************************************
 * LOCAL TYPEDEFS                                                  *
 *******************************************************************/
@@ -132,7 +134,7 @@ static void usage(char *progname)
 	printf("\t-d <device>        - choose dvb device /dev/dvb<device>.frontend0\n");
 	printf("\t-i                 - print tuner info\n");
 	printf("\t-t <");
-	for(i = 0; i < (sizeof(delivery_system_desc) / sizeof(*delivery_system_desc)); i++) {
+	for(i = 0; i < ARRAY_SIZE(delivery_system_desc); i++) {
 		printf("%s%s", i ? "|" : "", delivery_system_desc[i].name);
 	}
 	printf("> - delivery type\n");
@@ -142,7 +144,7 @@ static void usage(char *progname)
 	printf("\t-p <plp id>        - set plp id (for DVB-T2)\n");
 
 	printf("\t-m <");
-	for(i = 0; i < (sizeof(fe_mod_desc) / sizeof(*fe_mod_desc)); i++) {
+	for(i = 0; i < ARRAY_SIZE(fe_mod_desc); i++) {
 		printf("%s%s", i ? "|" : "", fe_mod_desc[i].name);
 	}
 	printf("> - chose modulation\n");
@@ -152,7 +154,7 @@ static void usage(char *progname)
 static fe_delivery_system_t parse_delivery(char *mod_str)
 {
 	uint32_t	i;
-	for(i = 0; i < (sizeof(delivery_system_desc) / sizeof(*delivery_system_desc)); i++) {
+	for(i = 0; i < ARRAY_SIZE(delivery_system_desc); i++) {
 		delivery_system_desc_t *cur_sys = delivery_system_desc + i;
 		if(strcmp(mod_str, cur_sys->name) == 0) {
 			return cur_sys->system;
@@ -164,7 +166,7 @@ static fe_delivery_system_t parse_delivery(char *mod_str)
 static char *get_delivery_system_name(fe_delivery_system_t delivery_system)
 {
 	uint32_t	i;
-	for(i = 0; i < (sizeof(delivery_system_desc) / sizeof(*delivery_system_desc)); i++) {
+	for(i = 0; i < ARRAY_SIZE(delivery_system_desc); i++) {
 		delivery_system_desc_t *cur_sys = delivery_system_desc + i;
 		if(cur_sys->system == delivery_system) {
 			return cur_sys->name;
@@ -176,7 +178,7 @@ static char *get_delivery_system_name(fe_delivery_system_t delivery_system)
 static fe_modulation_t parse_modulation(char *mod_str)
 {
 	uint32_t	i;
-	for(i = 0; i < (sizeof(fe_mod_desc) / sizeof(*fe_mod_desc)); i++) {
+	for(i = 0; i < ARRAY_SIZE(fe_mod_desc); i++) {
 		fe_mod_desc_t *cur_mod = fe_mod_desc + i;
 		if(strcmp(mod_str, cur_mod->name) == 0) {
 			return cur_mod->modulation;
@@ -188,7 +190,7 @@ static fe_modulation_t parse_modulation(char *mod_str)
 static char *get_modulation_name(fe_modulation_t mod)
 {
 	uint32_t	i;
-	for(i = 0; i < (sizeof(fe_mod_desc) / sizeof(*fe_mod_desc)); i++) {
+	for(i = 0; i < ARRAY_SIZE(fe_mod_desc); i++) {
 		fe_mod_desc_t *cur_mod = fe_mod_desc + i;
 		if(cur_mod->modulation == mod) {
 			return cur_mod->name;
@@ -218,7 +220,7 @@ static int dvb_printFrontendInfo(int frontend_fd)
 			fe_info.frequency_min, fe_info.frequency_max, fe_info.frequency_stepsize,
 			fe_info.symbol_rate_min, fe_info.symbol_rate_max);
 	printf("\tCapabilities:\n");
-	for(i = 0; i < (sizeof(fe_caps_desc) / sizeof(*fe_caps_desc)); i++) {
+	for(i = 0; i < ARRAY_SIZE(fe_caps_desc); i++) {
 		fe_caps_desc_t *cur_desc = fe_caps_desc + i;
 		if(cur_desc->capability & fe_info.caps) {
 			printf("\t\t%s\n", cur_desc->name);
@@ -298,6 +300,28 @@ int dvb_setFrontendType(int32_t fd_frontend, fe_delivery_system_t type)
 #endif
 }
 
+int32_t dvb_openFronend(uint32_t adap, uint32_t fe, int32_t *fd)
+{
+	char *pathTemplate[] = {
+		"/dev/dvb%d.frontend%d",
+		"/dev/dvb/adapter%d/frontend%d",
+	};
+	uint32_t i;
+
+	for(i = 0; i < ARRAY_SIZE(pathTemplate); i++) {
+		char buf[CMD_BUF_SIZE];
+		snprintf(buf, sizeof(buf), pathTemplate[i], adap, fe);
+		printf("Try to open %s ... ", buf);
+		if((*fd = open(buf, O_RDWR)) >= 0) {
+			printf("success\n");
+			return 0;
+		}
+		printf("fail\n");
+	}
+
+	return -1;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -310,7 +334,6 @@ int main(int argc, char **argv)
 	uint32_t						symbol_rate = 6900000;//6,9MHz
 	fe_modulation_t					modulation = QAM_AUTO;
 	uint32_t						plp_id = 0;
-	char							buf[CMD_BUF_SIZE];
 	struct dvb_frontend_parameters	fe_params;
 
 /*	if(argc > 1) {
@@ -346,12 +369,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	snprintf(buf, sizeof(buf), "/dev/dvb%d.frontend0", device);
-	printf("Open %s\n", buf);
-
-	if((fd_frontend = open(buf, O_RDWR)) < 0) {
-		printf("%s[%d]: Error open frontend %s\n", __FILE__, __LINE__, buf);
-		perror("errno: ");
+	if(dvb_openFronend(device, 0, &fd_frontend) != 0) {
+		printf("%s[%d]: Error open device=%d frontend\n", __FILE__, __LINE__, device);
 		return -1;
 	}
 
