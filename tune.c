@@ -12,8 +12,10 @@
 #include <string.h>
 #include <errno.h>
 //linux
-#include <linux/dvb/frontend.h>
-#include <linux/version.h>
+//#include <linux/dvb/frontend.h>
+//#include <linux/version.h>
+#include "frontend.h"
+
 
 /******************************************************************
 * LOCAL MACROS                                                    *
@@ -267,26 +269,11 @@ static void dvb_printLockInfo(int32_t fd_frontend, uint32_t *p_status)
 
 int dvb_setFrontendType(int32_t fd_frontend, fe_delivery_system_t type)
 {
-#ifdef DTV_DELIVERY_SYSTEM
 	struct dtv_property p = { .cmd = DTV_DELIVERY_SYSTEM, };
 	struct dtv_properties cmdseq = {
 		.num = 1,
 		.props = &p
 	};
-
-/*	switch (type) {
-		case DVBT:
-			p.u.data = SYS_DVBT; break;
-		case DVBC:
-			p.u.data = SYS_DVBC_ANNEX_A; break;
-		case DVBS:
-			p.u.data = SYS_DVBS; break;
-		case FE_ATSC:
-			p.u.data = SYS_ATSC; break;
-		default:
-			printf("%s: unknown frontend type %d\n", __FUNCTION__, type);
-			return -1;
-	}*/
 	p.u.data = type;
 
 	if (ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
@@ -295,9 +282,6 @@ int dvb_setFrontendType(int32_t fd_frontend, fe_delivery_system_t type)
 	}
 
 	return 0;
-#else
-	return -1;
-#endif
 }
 
 int32_t dvb_openFronend(uint32_t adap, uint32_t fe, int32_t *fd)
@@ -407,17 +391,28 @@ int main(int argc, char **argv)
 		fe_params.u.ofdm.transmission_mode = TRANSMISSION_MODE_AUTO;//TRANSMISSION_MODE_8K
 		fe_params.u.ofdm.guard_interval = GUARD_INTERVAL_AUTO;//GUARD_INTERVAL_1_16
 		fe_params.u.ofdm.hierarchy_information = HIERARCHY_AUTO;
-#ifdef DTV_STREAM_ID
+
 		if(delivery_system == SYS_DVBT2) {
 			struct dtv_property dtv = { .cmd = DTV_STREAM_ID, .u.data = plp_id, };
 			struct dtv_properties cmdseq = { .num = 1, .props = &dtv, };
-			if (ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
+			if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
 				printf("FAILED to set plp %u\n", plp_id);
 				return -4;
+
+/*				printf("FAILED to set plp with DTV_STREAM_ID property\n");
+
+				dtv = { .cmd = DTV_ISDBS_TS_ID, .u.data = plp_id, };
+				cmdseq = { .num = 1, .props = &dtv, };
+				if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
+					printf("FAILED to set plp with FE_SET_PROPERTY property\n");
+					printf("FAILED to set plp %u\n", plp_id);
+					return -4;
+				} else {
+					printf("Trick: set plp with FE_SET_PROPERTY property\n");
+				}*/
 			}
 			printf("\tT2 plp = %u\n", plp_id);
 		}
-#endif
 	} else if((delivery_system == SYS_ATSC) || (delivery_system == SYS_DVBC_ANNEX_B)) { //ATSC
 		printf( "Tune frontend on:\n"
 				"\tfreq        = %9d Hz\n"
