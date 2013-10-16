@@ -9,6 +9,7 @@
 #include <fcntl.h> //open
 #include <sys/ioctl.h>
 #include <unistd.h> //sleep, close
+#include <getopt.h>
 #include <string.h>
 #include <errno.h>
 //linux
@@ -128,31 +129,6 @@ fe_mod_desc_t fe_mod_desc[] = {
 /******************************************************************
 * FUNCTION IMPLEMENTATION                     <Module>_<Word>+    *
 *******************************************************************/
-static void usage(char *progname)
-{
-	uint32_t	i;
-
-	printf("Usage: %s [OPTIONS]\n", progname);
-	printf("\t-d <device>        - choose dvb device /dev/dvb<device>.frontend0\n");
-	printf("\t-i                 - print tuner info\n");
-	printf("\t-t <");
-	for(i = 0; i < ARRAY_SIZE(delivery_system_desc); i++) {
-		printf("%s%s", i ? "|" : "", delivery_system_desc[i].name);
-	}
-	printf("> - delivery type\n");
-
-	printf("\t-f <frequency>     - set frequency in Hz\n");
-	printf("\t-s <symbol rate>   - set symbol rate in Hz\n");
-	printf("\t-p <plp id>        - set plp id (for DVB-T2)\n");
-
-	printf("\t-m <");
-	for(i = 0; i < ARRAY_SIZE(fe_mod_desc); i++) {
-		printf("%s%s", i ? "|" : "", fe_mod_desc[i].name);
-	}
-	printf("> - chose modulation\n");
-	return;
-}
-
 static fe_delivery_system_t parse_delivery(char *mod_str)
 {
 	uint32_t	i;
@@ -306,30 +282,75 @@ int32_t dvb_openFronend(uint32_t adap, uint32_t fe, int32_t *fd)
 	return -1;
 }
 
+static void usage(char *progname)
+{
+	uint32_t i;
+
+	printf("Usage: %s [OPTIONS]\n", progname);
+	printf("\t-h, --help                    - Print this message\n");
+	printf("\t-v, --verbose                    - Be verbose\n");
+	printf("\t-d, --device=DEVID            - Choose dvb device /dev/dvb<DEVID>.frontend0\n");
+	printf("\t-i, --info                    - Print tuner info\n");
+	printf("\t-t, --del-sys=<");
+	for(i = 0; i < ARRAY_SIZE(delivery_system_desc); i++) {
+		printf("%s%s", i ? "|" : "", delivery_system_desc[i].name);
+	}
+	printf("> - Select delivery type\n");
+
+	printf("\t-f, --frequency=FREQUENCY     - Set frequency in Hz\n");
+	printf("\t-s, --symbol-rate=SYMBOLRATE  - Set symbol rate in symbol per second\n");
+	printf("\t-p, --plp-id=PLPID            - Set plp id (for DVB-T2)\n");
+
+	printf("\t-m, --modulation=<");
+	for(i = 0; i < ARRAY_SIZE(fe_mod_desc); i++) {
+		printf("%s%s", i ? "|" : "", fe_mod_desc[i].name);
+	}
+	printf("> - Set modulation\n");
+	return;
+}
+
 
 int main(int argc, char **argv)
 {
 	int32_t							fd_frontend;
 	int32_t							opt;
 	uint32_t						device = 0;
-	uint32_t						show_tuner_info = 0;
+	static int32_t					show_tuner_info = 0;
+	static int32_t					verbose = 0;
 	fe_delivery_system_t			delivery_system = SYS_DVBC_ANNEX_A;
-	uint32_t						frequency = 690000000;//690MHz
+	uint32_t						frequency = 0;
 	uint32_t						symbol_rate = 6900000;//6,9MHz
 	fe_modulation_t					modulation = QAM_AUTO;
 	uint32_t						plp_id = 0;
 	struct dvb_frontend_parameters	fe_params;
+	int32_t							option_index = 0;
+	static struct option			long_options[] = {
+		{"help",		no_argument,		0, 'h'},
+		{"info",		no_argument,		0, 'i'},
+		{"verbose",		no_argument,		0, 'v'},
+		{"device",		required_argument,	0, 'd'},
+		{"del-sys",		required_argument,	0, 't'},
+		{"frequency",	required_argument,	0, 'f'},
+		{"symbol-rate",	required_argument,	0, 's'},
+		{"modulation",	required_argument,	0, 'm'},
+		{"plp-id",		required_argument,	0, 'p'},
+		{0, 0, 0, 0},
+	};
 
-/*	if(argc > 1) {
-		device = atoi(argv[1]);
-	}*/
-	while((opt = getopt(argc, argv, "d:it:f:s:m:p:")) != -1) {
+	while((opt = getopt_long(argc, argv, "hivd:t:f:s:m:p:", long_options, &option_index)) != -1) {
 		switch(opt) {
-			case 'd':
-				device = atoi(optarg);
+			case 'h':
+				usage(argv[0]);
+				return 0;
 				break;
 			case 'i':
 				show_tuner_info = 1;
+				break;
+			case 'v':
+				verbose = 1;
+				break;
+			case 'd':
+				device = atoi(optarg);
 				break;
 			case 't':
 				delivery_system = parse_delivery(optarg);
@@ -351,6 +372,12 @@ int main(int argc, char **argv)
 				return -3;
 				break;
 		}
+	}
+
+	if(frequency == 0) {
+		printf("ERROR: Frequency not setted!\n");
+		usage(argv[0]);
+		return -5;
 	}
 
 	if(dvb_openFronend(device, 0, &fd_frontend) != 0) {
@@ -448,6 +475,11 @@ int main(int argc, char **argv)
 	}
 	while(1) {
 		sleep(1);
+		if(verbose) {
+			uint32_t status;
+			ioctl(fd_frontend, FE_READ_STATUS, &status);
+			dvb_printLockInfo(fd_frontend, &status);
+		}
 	}
 
 	close(fd_frontend);
