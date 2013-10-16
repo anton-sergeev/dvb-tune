@@ -6,7 +6,7 @@
 
 OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_SOURCES))
 OBJECTS += $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(CXX_SOURCES))
-OBJECTS_DIRS := $(sort $(BUILD_DIR) $(dir $(OBJECTS)))
+OBJECTS_DIRS := $(sort $(BUILD_DIR)/ $(dir $(OBJECTS)))
 DIRECTORIES += $(OBJECTS_DIRS)
 PROGRAMM := $(BUILD_DIR)/$(PROGRAM_NAME)
 
