@@ -324,6 +324,7 @@ int main(int argc, char **argv)
 	uint32_t						plp_id = 0;
 	struct dvb_frontend_parameters	fe_params;
 	int32_t							option_index = 0;
+	int32_t							inversion = INVERSION_AUTO;
 	static struct option			long_options[] = {
 		{"help",		no_argument,		0, 'h'},
 		{"info",		no_argument,		0, 'i'},
@@ -334,10 +335,11 @@ int main(int argc, char **argv)
 		{"symbol-rate",	required_argument,	0, 's'},
 		{"modulation",	required_argument,	0, 'm'},
 		{"plp-id",		required_argument,	0, 'p'},
+		{"inversion",	required_argument,	0, 'n'},
 		{0, 0, 0, 0},
 	};
 
-	while((opt = getopt_long(argc, argv, "hivd:t:f:s:m:p:", long_options, &option_index)) != -1) {
+	while((opt = getopt_long(argc, argv, "hivd:t:f:s:m:p:n:", long_options, &option_index)) != -1) {
 		switch(opt) {
 			case 'h':
 				usage(argv[0]);
@@ -367,6 +369,15 @@ int main(int argc, char **argv)
 			case 'p':
 				plp_id = atoi(optarg);
 				break;
+			case 'n': {
+				int32_t inv = atoi(optarg);
+				if(inv > 0) {
+					inversion = INVERSION_ON;
+				} else if(inv == 0) {
+					inversion = INVERSION_OFF;
+				}
+				break;
+			}
 			default:
 				usage(argv[0]);
 				return -3;
@@ -398,7 +409,7 @@ int main(int argc, char **argv)
 				frequency, symbol_rate, get_modulation_name(modulation));
 
 		fe_params.frequency = frequency;//(12666000-10600000);
-		fe_params.inversion = INVERSION_AUTO;
+		fe_params.inversion = inversion;
 		fe_params.u.qam.fec_inner = FEC_AUTO;
 		fe_params.u.qam.symbol_rate = symbol_rate;
 		fe_params.u.qam.modulation = modulation;
@@ -410,7 +421,7 @@ int main(int argc, char **argv)
 				frequency, get_modulation_name(modulation));
 
 		fe_params.frequency = frequency;//(12666000-10600000);
-		fe_params.inversion = INVERSION_AUTO;
+		fe_params.inversion = inversion;
 		fe_params.u.ofdm.bandwidth = BANDWIDTH_8_MHZ;//BANDWIDTH_AUTO
 		fe_params.u.ofdm.code_rate_HP = FEC_AUTO;//FEC_7_8;
 		fe_params.u.ofdm.code_rate_LP = FEC_AUTO;//FEC_7_8;
@@ -447,7 +458,7 @@ int main(int argc, char **argv)
 				frequency, get_modulation_name(modulation));
 
 		fe_params.frequency = frequency;//(12666000-10600000);
-		fe_params.inversion = INVERSION_AUTO;//INVERSION_ON;
+		fe_params.inversion = inversion;//INVERSION_ON;
 		fe_params.u.vsb.modulation = modulation;//VSB_8
 	} else {
 		printf("Not supported delivery system: %s\n", get_delivery_system_name(delivery_system));
