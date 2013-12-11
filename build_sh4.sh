@@ -6,4 +6,5 @@ BUILDROOT=${BUILDROOT:-$PRJROOT/build_stb830_24}
 export PATH=$PATH:/opt/STM/STLinux-2.4/devkit/sh4/bin
 export ARCH=sh4
 make
+echo "Update $BUILDROOT/rootfs_nfs/serga/dvb/dvb-tune"
 cp $ARCH/dvb-tune $BUILDROOT/rootfs_nfs/serga/dvb/
