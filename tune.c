@@ -288,7 +288,7 @@ static void usage(char *progname)
 
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("\t-h, --help                    - Print this message\n");
-	printf("\t-v, --verbose                    - Be verbose\n");
+	printf("\t-v, --verbose                 - Be verbose\n");
 	printf("\t-d, --device=DEVID            - Choose dvb device /dev/dvb<DEVID>.frontend0\n");
 	printf("\t-i, --info                    - Print tuner info\n");
 	printf("\t-t, --del-sys=<");
@@ -306,6 +306,9 @@ static void usage(char *progname)
 		printf("%s%s", i ? "|" : "", fe_mod_desc[i].name);
 	}
 	printf("> - Set modulation\n");
+	printf("\t-c, --close-fe                - Close frontend at the end (infinity wait is default)\n");
+	printf("\t-w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
+	
 	return;
 }
 
@@ -325,6 +328,9 @@ int main(int argc, char **argv)
 	struct dvb_frontend_parameters	fe_params;
 	int32_t							option_index = 0;
 	int32_t							inversion = INVERSION_AUTO;
+	int32_t							dont_close_fe = 1;
+	int32_t							wait_count = -1;
+	int32_t							has_lock = 0;
 	static struct option			long_options[] = {
 		{"help",		no_argument,		0, 'h'},
 		{"info",		no_argument,		0, 'i'},
@@ -336,10 +342,12 @@ int main(int argc, char **argv)
 		{"modulation",	required_argument,	0, 'm'},
 		{"plp-id",		required_argument,	0, 'p'},
 		{"inversion",	required_argument,	0, 'n'},
+		{"close-fe",	no_argument,		0, 'c'},
+		{"wait-count",	required_argument,	0, 'w'},
 		{0, 0, 0, 0},
 	};
 
-	while((opt = getopt_long(argc, argv, "hivd:t:f:s:m:p:n:", long_options, &option_index)) != -1) {
+	while((opt = getopt_long(argc, argv, "hivd:t:f:s:m:p:n:cw:", long_options, &option_index)) != -1) {
 		switch(opt) {
 			case 'h':
 				usage(argv[0]);
@@ -378,6 +386,12 @@ int main(int argc, char **argv)
 				}
 				break;
 			}
+			case 'c':
+				dont_close_fe = 0;
+				break;
+			case 'w':
+				wait_count = atoi(optarg);
+				break;
 			default:
 				usage(argv[0]);
 				return -3;
@@ -477,14 +491,20 @@ int main(int argc, char **argv)
 		dvb_printLockInfo(fd_frontend, &status);
 
 		if(status & FE_HAS_LOCK) {
+			has_lock = 1;
 			printf("%s[%d]: Locked success!!!\n", __FILE__, __LINE__);
 			break;
 		} else {
 			sleep(1);
 //			usleep(100000);
 		}
+		if(wait_count == 0) {
+			break;
+		} else if(wait_count > 0) {
+			wait_count--;
+		}
 	}
-	while(1) {
+	while(dont_close_fe) {
 		sleep(1);
 		if(verbose) {
 			uint32_t status;
@@ -494,5 +514,5 @@ int main(int argc, char **argv)
 	}
 
 	close(fd_frontend);
-	return 0;
+	return has_lock ? 0 : -4;
 }
