@@ -325,7 +325,6 @@ int main(int argc, char **argv)
 	uint32_t						symbol_rate = 6900000;//6,9MHz
 	fe_modulation_t					modulation = QAM_AUTO;
 	uint32_t						plp_id = 0;
-	struct dvb_frontend_parameters	fe_params;
 	int32_t							option_index = 0;
 	int32_t							inversion = INVERSION_AUTO;
 	int32_t							dont_close_fe = 1;
@@ -415,6 +414,9 @@ int main(int argc, char **argv)
 		dvb_printFrontendInfo(fd_frontend);
 	printf( "Selected delivery sistem: %s\n", get_delivery_system_name(delivery_system));
 
+	struct dtv_property dtv[16];//check if it enough
+	struct dtv_properties cmdseq;
+
 	if(delivery_system == SYS_DVBC_ANNEX_A) {//DVB-C
 		printf( "Tune frontend on:\n"
 				"\tfreq        = %9d Hz\n"
@@ -422,32 +424,38 @@ int main(int argc, char **argv)
 				"\tmodulation  = %s\n",
 				frequency, symbol_rate, get_modulation_name(modulation));
 
-		fe_params.frequency = frequency;//(12666000-10600000);
-		fe_params.inversion = inversion;
-		fe_params.u.qam.fec_inner = FEC_AUTO;
-		fe_params.u.qam.symbol_rate = symbol_rate;
-		fe_params.u.qam.modulation = modulation;
-	//	fe_params.u.qam.modulation = QAM_AUTO;
+		dtv[0].cmd = DTV_FREQUENCY; 		dtv[0].u.data = frequency;//(12666000-10600000);
+		dtv[1].cmd = DTV_MODULATION; 		dtv[1].u.data = modulation;
+		dtv[2].cmd = DTV_SYMBOL_RATE; 		dtv[2].u.data = symbol_rate;
+		dtv[3].cmd = DTV_INVERSION; 		dtv[3].u.data = inversion;
+		dtv[4].cmd = DTV_INNER_FEC; 		dtv[4].u.data = FEC_AUTO;
+		dtv[5].cmd = DTV_TUNE;
+
+		cmdseq.num = 6;
+
 	} else if((delivery_system == SYS_DVBT) || (delivery_system == SYS_DVBT2)) { //DVB-T/T2
 		printf( "Tune frontend on:\n"
 				"\tfreq        = %9d Hz\n"
 				"\tmodulation  = %s\n",
 				frequency, get_modulation_name(modulation));
 
-		fe_params.frequency = frequency;//(12666000-10600000);
-		fe_params.inversion = inversion;
-		fe_params.u.ofdm.bandwidth = BANDWIDTH_8_MHZ;//BANDWIDTH_AUTO
-		fe_params.u.ofdm.code_rate_HP = FEC_AUTO;//FEC_7_8;
-		fe_params.u.ofdm.code_rate_LP = FEC_AUTO;//FEC_7_8;
-		fe_params.u.ofdm.constellation = modulation;
-		fe_params.u.ofdm.transmission_mode = TRANSMISSION_MODE_AUTO;//TRANSMISSION_MODE_8K
-		fe_params.u.ofdm.guard_interval = GUARD_INTERVAL_AUTO;//GUARD_INTERVAL_1_16
-		fe_params.u.ofdm.hierarchy_information = HIERARCHY_AUTO;
+		dtv[0].cmd = DTV_FREQUENCY; 		dtv[0].u.data = frequency;//(12666000-10600000);
+		dtv[1].cmd = DTV_INVERSION; 		dtv[1].u.data = inversion;
+		dtv[2].cmd = DTV_BANDWIDTH_HZ; 		dtv[2].u.data = BANDWIDTH_8_MHZ;//BANDWIDTH_AUTO
+		dtv[3].cmd = DTV_CODE_RATE_HP; 		dtv[3].u.data = FEC_AUTO;//FEC_7_8;
+		dtv[4].cmd = DTV_CODE_RATE_LP; 		dtv[4].u.data = FEC_AUTO;//FEC_7_8;
+		dtv[5].cmd = DTV_MODULATION; 		dtv[5].u.data = modulation;
+		dtv[6].cmd = DTV_TRANSMISSION_MODE;	dtv[6].u.data = TRANSMISSION_MODE_AUTO;//TRANSMISSION_MODE_8K;
+		dtv[7].cmd = DTV_GUARD_INTERVAL; 	dtv[7].u.data = GUARD_INTERVAL_AUTO;//GUARD_INTERVAL_1_16
+		dtv[8].cmd = DTV_HIERARCHY; 		dtv[8].u.data = HIERARCHY_AUTO;
+		dtv[9].cmd = DTV_TUNE;
+
+		cmdseq.num = 10;
 
 		if(delivery_system == SYS_DVBT2) {
-			struct dtv_property dtv = { .cmd = DTV_STREAM_ID, .u.data = plp_id, };
-			struct dtv_properties cmdseq = { .num = 1, .props = &dtv, };
-			if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
+			struct dtv_property dtv_plp = { .cmd = DTV_STREAM_ID, .u.data = plp_id, };
+			struct dtv_properties cmdseq_plp = { .num = 1, .props = &dtv_plp, };
+			if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq_plp) == -1) {
 				printf("FAILED to set plp %u\n", plp_id);
 				return -4;
 
@@ -465,24 +473,32 @@ int main(int argc, char **argv)
 			}
 			printf("\tT2 plp = %u\n", plp_id);
 		}
+
 	} else if((delivery_system == SYS_ATSC) || (delivery_system == SYS_DVBC_ANNEX_B)) { //ATSC
 		printf( "Tune frontend on:\n"
 				"\tfreq        = %9d Hz\n"
 				"\tmodulation  = %s\n",
 				frequency, get_modulation_name(modulation));
 
-		fe_params.frequency = frequency;//(12666000-10600000);
-		fe_params.inversion = inversion;//INVERSION_ON;
-		fe_params.u.vsb.modulation = modulation;//VSB_8
+		dtv[0].cmd = DTV_FREQUENCY; 		dtv[0].u.data = frequency;//(12666000-10600000);
+		dtv[1].cmd = DTV_MODULATION; 		dtv[1].u.data = modulation;//VSB_8
+		dtv[2].cmd = DTV_INVERSION; 		dtv[1].u.data = inversion;//INVERSION_ON;
+		dtv[3].cmd = DTV_TUNE;
+
+		cmdseq.num = 4;
+
 	} else {
 		printf("Not supported delivery system: %s\n", get_delivery_system_name(delivery_system));
 		return -2;
 	}
 
-	if (ioctl(fd_frontend, FE_SET_FRONTEND, &fe_params) < 0) {
+	cmdseq.props = dtv;
+
+	if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
 		perror("FRONTEND FE_SET_FRONTEND: ");
 		return -3;
 	}
+
 	usleep(10000);//10ms
 
 	while(1) {
