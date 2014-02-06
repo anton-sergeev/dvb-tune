@@ -434,6 +434,7 @@ int main(int argc, char **argv)
 		cmdseq.num = 6;
 
 	} else if((delivery_system == SYS_DVBT) || (delivery_system == SYS_DVBT2)) { //DVB-T/T2
+		int32_t propCount;
 		printf( "Tune frontend on:\n"
 				"\tfreq        = %9d Hz\n"
 				"\tmodulation  = %s\n",
@@ -448,31 +449,15 @@ int main(int argc, char **argv)
 		dtv[6].cmd = DTV_TRANSMISSION_MODE;	dtv[6].u.data = TRANSMISSION_MODE_AUTO;//TRANSMISSION_MODE_8K;
 		dtv[7].cmd = DTV_GUARD_INTERVAL; 	dtv[7].u.data = GUARD_INTERVAL_AUTO;//GUARD_INTERVAL_1_16
 		dtv[8].cmd = DTV_HIERARCHY; 		dtv[8].u.data = HIERARCHY_AUTO;
-		dtv[9].cmd = DTV_TUNE;
-
-		cmdseq.num = 10;
-
+		propCount = 9;
 		if(delivery_system == SYS_DVBT2) {
-			struct dtv_property dtv_plp = { .cmd = DTV_STREAM_ID, .u.data = plp_id, };
-			struct dtv_properties cmdseq_plp = { .num = 1, .props = &dtv_plp, };
-			if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq_plp) == -1) {
-				printf("FAILED to set plp %u\n", plp_id);
-				return -4;
-
-/*				printf("FAILED to set plp with DTV_STREAM_ID property\n");
-
-				dtv = { .cmd = DTV_ISDBS_TS_ID, .u.data = plp_id, };
-				cmdseq = { .num = 1, .props = &dtv, };
-				if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
-					printf("FAILED to set plp with FE_SET_PROPERTY property\n");
-					printf("FAILED to set plp %u\n", plp_id);
-					return -4;
-				} else {
-					printf("Trick: set plp with FE_SET_PROPERTY property\n");
-				}*/
-			}
-			printf("\tT2 plp = %u\n", plp_id);
+			dtv[propCount].cmd = DTV_STREAM_ID; 	dtv[9].u.data = plp_id;
+			propCount++;
 		}
+		dtv[propCount].cmd = DTV_TUNE;
+		propCount++;
+
+		cmdseq.num = propCount;
 
 	} else if((delivery_system == SYS_ATSC) || (delivery_system == SYS_DVBC_ANNEX_B)) { //ATSC
 		printf( "Tune frontend on:\n"
