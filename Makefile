@@ -1,8 +1,8 @@
 
 
-include compile.mk
+include makefile.begin.mk
 
 PROGRAM_NAME := dvb-tune
 C_SOURCES := $(wildcard *.c)
 
-include compile_end.mk
+include makefile.end.mk
