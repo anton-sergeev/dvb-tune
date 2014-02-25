@@ -2,11 +2,11 @@
 # File Name   : compile.mk
 # Copyright (C) 2013 Elecard Devices
 # *****************************************************************************
-
+#
 # Include this file and define minimum variables:
-# 	PROGRAM_NAME
-# 	C_SOURCES or CXX_SOURCES
-# 
+# 	PROGRAM_NAME or LIB_NAME_STATIC or LIB_NAME_SHARED
+# 	C_SOURCES, CXX_SOURCES
+#
 # Optional variables, defined in makefile:
 #	LOCAL_CFLAGS, LOCAL_CXXFLAGS, LOCAL_LDFLAGS
 #	ADD_LIBS
@@ -20,13 +20,20 @@
 SHELL := /bin/bash
 
 ifeq ($(ARCH),)
-    ARCH=x86
+    ARCH=$(shell uname -m)
+    ifeq ($(ARCH),i686)
+        ARCH=x86
+    endif
+    ifeq ($(ARCH),)
+        ARCH=x86
+    endif
 else
     CROSS_COMPILE?=$(ARCH)-linux-
 endif
 BUILD_DIR?=$(ARCH)
 
 CC=$(CROSS_COMPILE)gcc
+CXX=$(CROSS_COMPILE)g++
 AR=$(CROSS_COMPILE)ar
 LD=$(CROSS_COMPILE)gcc
 
@@ -81,6 +88,7 @@ cmd_cc_o_c = $(CC) $(GEN_DEP_FILE_FLAGS) $(CFLAGS) $(SEP_FLAGS_$(notdir $<)) -c 
 ## C++ compiler
 quiet_cmd_cxx_o_cpp = CPP $@
 cmd_cxx_o_cpp = $(CXX) $(GEN_DEP_FILE_FLAGS) $(CXXFLAGS) $(SEP_FLAGS_$(notdir $<)) -c $< -o $@
+
 ## linker
 quiet_cmd_ld_out_o = LD $@
 cmd_ld_out_o = $(LD) -o $@ $(OBJECTS) $(ADD_LIBS) $(LDFLAGS)
