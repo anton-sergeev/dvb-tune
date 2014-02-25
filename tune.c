@@ -207,13 +207,40 @@ int32_t table_IntStrLookupR(const table_IntStr_t table[], char *value, int32_t d
 static int dvb_printFrontendInfo(int frontend_fd)
 {
 	int			err;
-	struct dvb_frontend_info fe_info;
-	table_IntStr_t *cur_desc = fe_caps_desc;
+	table_IntStr_t				*cur_desc = fe_caps_desc;
+	struct dvb_frontend_info	fe_info;
+	struct dtv_properties		dtv_prop;
+	struct dtv_property			dvb_prop[DTV_MAX_COMMAND];
 
+	dvb_prop[0].cmd = DTV_API_VERSION;
+
+	dtv_prop.num = 1;
+	dtv_prop.props = dvb_prop;
+	if(ioctl(frontend_fd, FE_GET_PROPERTY, &dtv_prop) == -1) {
+		printf("DVB API v3\n");
+	} else {
+		printf("DVB API v%d.%d\n", dvb_prop[0].u.data >> 8, dvb_prop[0].u.data & 0xff);
+		if(dvb_prop[0].u.data >= 0x505) {
+			dvb_prop[0].cmd = DTV_ENUM_DELSYS;
+			dtv_prop.num = 1;
+			dtv_prop.props = dvb_prop;
+			if(ioctl(frontend_fd, FE_GET_PROPERTY, &dtv_prop) != -1) {
+				if(dvb_prop[0].u.buffer.len > 0) {
+					uint32_t i;
+					printf("Supported delivery systems: ");
+					for(i = 0; i < dvb_prop[0].u.buffer.len; i++) {
+						fe_delivery_system_t delSys = dvb_prop[0].u.buffer.data[i];
+						printf("%s ", get_delSys_name(delSys));
+					}
+					printf("\n");
+				}
+			}
+		}
+	}
 	do {
 		err = ioctl(frontend_fd, FE_GET_INFO, &fe_info);
 		if (err < 0) {
-			printf("%s: ioctl FE_GET_INFO failed", __FUNCTION__);
+			printf("%s: ioctl FE_GET_INFO failed", __func__);
 		}
 	} while(err < 0);
 	printf( "Tuner info:\n"
@@ -281,7 +308,7 @@ int dvb_setFrontendType(int32_t fd_frontend, fe_delivery_system_t type)
 	p.u.data = type;
 
 	if (ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
-		printf("%s: set property failed: %s\n", __FUNCTION__, strerror(errno));
+		printf("%s: set property failed: %s\n", __func__, strerror(errno));
 		return -1;
 	}
 
