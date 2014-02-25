@@ -28,35 +28,56 @@
 
 #define ARRAY_SIZE(arr)	(sizeof(arr) / sizeof(arr[0]))
 
+#define SET_DTV_PRPERTY(prop, id, _cmd, val) \
+		{ \
+			prop[id].cmd = _cmd; \
+			prop[id].u.data = val; \
+			id++; \
+ 		}
+
+#define TABLE_INT_END_VALUE			0xdeadbeaf
+#define TABLE_STR_END_VALUE			NULL
+#define TABLE_INT_STR_END_VALUE		{TABLE_INT_END_VALUE, TABLE_STR_END_VALUE}
+
+#define TUNER_C_BAND_START			 3000000 /*kHZ*/
+#define TUNER_C_BAND_END			 4200000 /*kHZ*/
+#define TUNER_KU_LOW_BAND_START		10700000 /*kHZ*/
+#define TUNER_KU_LOW_BAND_END		11700000 /*kHZ*/
+#define TUNER_KU_HIGH_BAND_START	11700001 /*kHZ*/
+#define TUNER_KU_HIGH_BAND_END		12750000 /*kHZ*/
+
+#define get_modulation_name(mod)			table_IntStrLookup(fe_mod_desc, mod, "unknown")
+#define parse_modulation(modName)			table_IntStrLookupR(fe_mod_desc, modName, QAM_AUTO)
+
+#define get_delSys_name(delSys)				table_IntStrLookup(delivery_system_desc, delSys, "unknown")
+#define parse_delivery(delSysName)			table_IntStrLookupR(delivery_system_desc, delSysName, SYS_UNDEFINED)
+
+#define get_polarization_name(pol)			table_IntStrLookup(fe_pol_desc, pol, "unknown")
+#define parse_polarization_name(polName)	table_IntStrLookupR(fe_pol_desc, polName, SEC_VOLTAGE_13)
+
+#define get_feType_name(type)				table_IntStrLookup(fe_typeNames, type, "unknown")
+
 /******************************************************************
 * LOCAL TYPEDEFS                                                  *
 *******************************************************************/
-typedef struct {
-	fe_delivery_system_t	system;
-	char					*name;
-} delivery_system_desc_t;
 
 typedef struct {
-	fe_caps_t				capability;
-	char					*name;
-} fe_caps_desc_t;
-
-typedef struct {
-	fe_modulation_t			modulation;
-	char					*name;
-} fe_mod_desc_t;
+	int32_t key;
+	const char *value;
+} table_IntStr_t;
 
 /******************************************************************
 * STATIC DATA                                                     *
 *******************************************************************/
-static char *fe_typeNames[] = {
-	"DVB-S",
-	"DVB-C",
-	"DVB-T",
-	"ATSC"
+table_IntStr_t fe_typeNames[] = {
+	{FE_QPSK,	"DVB-S"},
+	{FE_QAM,	"DVB-C"},
+	{FE_OFDM,	"DVB-T"},
+	{FE_ATSC,	"ATSC"},
+	TABLE_INT_STR_END_VALUE
 };
 
-delivery_system_desc_t delivery_system_desc[] = {
+table_IntStr_t delivery_system_desc[] = {
 	{SYS_UNDEFINED,		"SYS_UNDEFINED"},
 	{SYS_DVBC_ANNEX_A,	"SYS_DVBC_ANNEX_A"},//DVB-C
 	{SYS_DVBC_ANNEX_B,	"SYS_DVBC_ANNEX_B"},
@@ -76,9 +97,10 @@ delivery_system_desc_t delivery_system_desc[] = {
 	{SYS_DVBT2,			"SYS_DVBT2"},
 	{SYS_TURBO,			"SYS_TURBO"},
 	{SYS_DVBC_ANNEX_C,	"SYS_DVBC_ANNEX_C"},
+	TABLE_INT_STR_END_VALUE
 };
 
-fe_caps_desc_t fe_caps_desc[] = {
+table_IntStr_t fe_caps_desc[] = {
 	{FE_IS_STUPID,					"FE_IS_STUPID"},
 	{FE_CAN_INVERSION_AUTO,			"FE_CAN_INVERSION_AUTO"},
 	{FE_CAN_FEC_1_2,				"FE_CAN_FEC_1_2"},
@@ -108,9 +130,10 @@ fe_caps_desc_t fe_caps_desc[] = {
 	{FE_NEEDS_BENDING,				"FE_NEEDS_BENDING"},
 	{FE_CAN_RECOVER,				"FE_CAN_RECOVER"},
 	{FE_CAN_MUTE_TS,				"FE_CAN_MUTE_TS"},
+	TABLE_INT_STR_END_VALUE
 };
 
-fe_mod_desc_t fe_mod_desc[] = {
+table_IntStr_t fe_mod_desc[] = {
 	{QPSK,		"QPSK"},
 	{QAM_16,	"QAM_16"},
 	{QAM_32,	"QAM_32"},
@@ -124,64 +147,68 @@ fe_mod_desc_t fe_mod_desc[] = {
 	{APSK_16,	"APSK_16"},
 	{APSK_32,	"APSK_32"},
 	{DQPSK,		"DQPSK"},
+	{QAM_4_NR,	"QAM_4_NR"},
+	TABLE_INT_STR_END_VALUE
+};
+
+//http://forum.sat-expert.com/antenny/2558-chto-takoe-h-v-i-l-r-ili-kak-resiver-pereklyuchaet-polyarizaciyu-i-ob-22kgc.html
+table_IntStr_t fe_pol_desc[] = {
+	{SEC_VOLTAGE_13,	"SEC_VOLTAGE_13"},
+	{SEC_VOLTAGE_18,	"SEC_VOLTAGE_18"},
+	{SEC_VOLTAGE_OFF,	"SEC_VOLTAGE_OFF"},
+
+	{SEC_VOLTAGE_18,	"0"},
+	{SEC_VOLTAGE_18,	"h"},
+	{SEC_VOLTAGE_18,	"hor"},
+	{SEC_VOLTAGE_18,	"horizontal"},
+	{SEC_VOLTAGE_18,	"left"},
+
+	{SEC_VOLTAGE_13,	"1"},
+	{SEC_VOLTAGE_13,	"v"},
+	{SEC_VOLTAGE_13,	"ver"},
+	{SEC_VOLTAGE_13,	"vertical"},
+	{SEC_VOLTAGE_18,	"right"},
+
+	{SEC_VOLTAGE_OFF,	"off"},
+	TABLE_INT_STR_END_VALUE
 };
 
 /******************************************************************
 * FUNCTION IMPLEMENTATION                     <Module>_<Word>+    *
 *******************************************************************/
-static fe_delivery_system_t parse_delivery(char *mod_str)
+const char *table_IntStrLookup(const table_IntStr_t table[], int32_t key, char *defaultValue)
 {
-	uint32_t	i;
-	for(i = 0; i < ARRAY_SIZE(delivery_system_desc); i++) {
-		delivery_system_desc_t *cur_sys = delivery_system_desc + i;
-		if(strcmp(mod_str, cur_sys->name) == 0) {
-			return cur_sys->system;
+	int32_t i;
+/*	if(key < 0) {
+		return defaultValue;
+	}*/
+	for(i = 0; table[i].value != TABLE_STR_END_VALUE; i++) {
+		if(table[i].key == key) {
+			return table[i].value;
 		}
 	}
-	return SYS_UNDEFINED;
+	return defaultValue;
 }
 
-static char *get_delivery_system_name(fe_delivery_system_t delivery_system)
+int32_t table_IntStrLookupR(const table_IntStr_t table[], char *value, int32_t defaultValue)
 {
-	uint32_t	i;
-	for(i = 0; i < ARRAY_SIZE(delivery_system_desc); i++) {
-		delivery_system_desc_t *cur_sys = delivery_system_desc + i;
-		if(cur_sys->system == delivery_system) {
-			return cur_sys->name;
+	int32_t i;
+	if(!value) {
+		return defaultValue;
+	}
+	for(i = 0; table[i].value != TABLE_STR_END_VALUE; i++) {
+		if(!strcasecmp(table[i].value, value)) {
+			return table[i].key;
 		}
 	}
-	return "unknown";
-}
-
-static fe_modulation_t parse_modulation(char *mod_str)
-{
-	uint32_t	i;
-	for(i = 0; i < ARRAY_SIZE(fe_mod_desc); i++) {
-		fe_mod_desc_t *cur_mod = fe_mod_desc + i;
-		if(strcmp(mod_str, cur_mod->name) == 0) {
-			return cur_mod->modulation;
-		}
-	}
-	return QAM_AUTO;
-}
-
-static char *get_modulation_name(fe_modulation_t mod)
-{
-	uint32_t	i;
-	for(i = 0; i < ARRAY_SIZE(fe_mod_desc); i++) {
-		fe_mod_desc_t *cur_mod = fe_mod_desc + i;
-		if(cur_mod->modulation == mod) {
-			return cur_mod->name;
-		}
-	}
-	return "unknown";
+	return defaultValue;
 }
 
 static int dvb_printFrontendInfo(int frontend_fd)
 {
 	int			err;
-	uint32_t	i;
 	struct dvb_frontend_info fe_info;
+	table_IntStr_t *cur_desc = fe_caps_desc;
 
 	do {
 		err = ioctl(frontend_fd, FE_GET_INFO, &fe_info);
@@ -194,15 +221,16 @@ static int dvb_printFrontendInfo(int frontend_fd)
 			"\tType=%s\n"
 			"\tfrequency_min  =%9u Hz, frequency_max  =%9u Hz, frequency_stepsize=%9u Hz\n"
 			"\tsymbol_rate_min=%9u Hz, symbol_rate_max=%9u Hz\n",
-			fe_info.name, fe_typeNames[fe_info.type],
+			fe_info.name, get_feType_name(fe_info.type),
 			fe_info.frequency_min, fe_info.frequency_max, fe_info.frequency_stepsize,
 			fe_info.symbol_rate_min, fe_info.symbol_rate_max);
 	printf("\tCapabilities:\n");
-	for(i = 0; i < ARRAY_SIZE(fe_caps_desc); i++) {
-		fe_caps_desc_t *cur_desc = fe_caps_desc + i;
-		if(cur_desc->capability & fe_info.caps) {
-			printf("\t\t%s\n", cur_desc->name);
+
+	while(cur_desc->value != TABLE_STR_END_VALUE) {
+		if(cur_desc->key & fe_info.caps) {
+			printf("\t\t%s\n", cur_desc->value);
 		}
+		cur_desc++;
 	}
 	return 0;
 }
@@ -284,7 +312,7 @@ int32_t dvb_openFronend(uint32_t adap, uint32_t fe, int32_t *fd)
 
 static void usage(char *progname)
 {
-	uint32_t i;
+	table_IntStr_t *table_IntStr_ptr;
 
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("\t-h, --help                    - Print this message\n");
@@ -292,8 +320,11 @@ static void usage(char *progname)
 	printf("\t-d, --device=DEVID            - Choose dvb device /dev/dvb<DEVID>.frontend0\n");
 	printf("\t-i, --info                    - Print tuner info\n");
 	printf("\t-t, --del-sys=<");
-	for(i = 0; i < ARRAY_SIZE(delivery_system_desc); i++) {
-		printf("%s%s", i ? "|" : "", delivery_system_desc[i].name);
+
+	table_IntStr_ptr = delivery_system_desc;
+	while(table_IntStr_ptr->value != TABLE_STR_END_VALUE) {
+		printf("%s%s", (table_IntStr_ptr == delivery_system_desc) ? "" : "|", table_IntStr_ptr->value);
+		table_IntStr_ptr++;
 	}
 	printf("> - Select delivery type\n");
 
@@ -302,35 +333,42 @@ static void usage(char *progname)
 	printf("\t-p, --plp-id=PLPID            - Set plp id (for DVB-T2)\n");
 
 	printf("\t-m, --modulation=<");
-	for(i = 0; i < ARRAY_SIZE(fe_mod_desc); i++) {
-		printf("%s%s", i ? "|" : "", fe_mod_desc[i].name);
+	table_IntStr_ptr = fe_mod_desc;
+	while(table_IntStr_ptr->value != TABLE_STR_END_VALUE) {
+		printf("%s%s", (table_IntStr_ptr == fe_mod_desc) ? "" : "|", table_IntStr_ptr->value);
+		table_IntStr_ptr++;
 	}
 	printf("> - Set modulation\n");
 	printf("\t-c, --close-fe                - Close frontend at the end (infinity wait is default)\n");
 	printf("\t-w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
-	
+	printf("\t-z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V\n");
+
 	return;
 }
 
 
 int main(int argc, char **argv)
 {
-	int32_t							fd_frontend;
-	int32_t							opt;
-	uint32_t						device = 0;
-	static int32_t					show_tuner_info = 0;
-	static int32_t					verbose = 0;
-	fe_delivery_system_t			delivery_system = SYS_DVBC_ANNEX_A;
-	uint32_t						frequency = 0;
-	uint32_t						symbol_rate = 6900000;//6,9MHz
-	fe_modulation_t					modulation = QAM_AUTO;
-	uint32_t						plp_id = 0;
-	int32_t							option_index = 0;
-	int32_t							inversion = INVERSION_AUTO;
-	int32_t							dont_close_fe = 1;
-	int32_t							wait_count = -1;
-	int32_t							has_lock = 0;
-	static struct option			long_options[] = {
+	struct dtv_property		dtv[16];//check if it enough
+	struct dtv_properties	cmdseq;
+	int32_t					fd_frontend;
+	int32_t					opt;
+	uint32_t				device = 0;
+	int32_t					show_tuner_info = 0;
+	int32_t					verbose = 0;
+	fe_delivery_system_t	delivery_system = SYS_DVBC_ANNEX_A;
+	uint32_t				frequency = 0;
+	uint32_t				symbol_rate = 6900000;//6,9MHz
+	fe_modulation_t			modulation = QAM_AUTO;
+	uint32_t				plp_id = 0;
+	int32_t					option_index = 0;
+	int32_t					inversion = INVERSION_AUTO;
+	int32_t					dont_close_fe = 1;
+	int32_t					wait_count = -1;
+	int32_t					has_lock = 0;
+	int32_t					polarization = SEC_VOLTAGE_13;//0 - horizontal, 1 - vertical
+	int32_t					propCount = 0;
+	static struct option	long_options[] = {
 		{"help",		no_argument,		0, 'h'},
 		{"info",		no_argument,		0, 'i'},
 		{"verbose",		no_argument,		0, 'v'},
@@ -343,10 +381,12 @@ int main(int argc, char **argv)
 		{"inversion",	required_argument,	0, 'n'},
 		{"close-fe",	no_argument,		0, 'c'},
 		{"wait-count",	required_argument,	0, 'w'},
+		{"polarization",required_argument,	0, 'z'},
+		{"pol",			required_argument,	0, 'z'},
 		{0, 0, 0, 0},
 	};
 
-	while((opt = getopt_long(argc, argv, "hivd:t:f:s:m:p:n:cw:", long_options, &option_index)) != -1) {
+	while((opt = getopt_long(argc, argv, "hivd:t:f:s:m:p:n:cw:z:", long_options, &option_index)) != -1) {
 		switch(opt) {
 			case 'h':
 				usage(argv[0]);
@@ -391,6 +431,9 @@ int main(int argc, char **argv)
 			case 'w':
 				wait_count = atoi(optarg);
 				break;
+			case 'z':
+				polarization = parse_polarization_name(optarg);
+				break;
 			default:
 				usage(argv[0]);
 				return -3;
@@ -410,12 +453,10 @@ int main(int argc, char **argv)
 	}
 
 	dvb_setFrontendType(fd_frontend, delivery_system);
-	if(show_tuner_info)
+	if(show_tuner_info) {
 		dvb_printFrontendInfo(fd_frontend);
-	printf( "Selected delivery sistem: %s\n", get_delivery_system_name(delivery_system));
-
-	struct dtv_property dtv[16];//check if it enough
-	struct dtv_properties cmdseq;
+	}
+	printf( "Selected delivery sistem: %s\n", get_delSys_name(delivery_system));
 
 	if(delivery_system == SYS_DVBC_ANNEX_A) {//DVB-C
 		printf( "Tune frontend on:\n"
@@ -424,40 +465,31 @@ int main(int argc, char **argv)
 				"\tmodulation  = %s\n",
 				frequency, symbol_rate, get_modulation_name(modulation));
 
-		dtv[0].cmd = DTV_FREQUENCY; 		dtv[0].u.data = frequency;//(12666000-10600000);
-		dtv[1].cmd = DTV_MODULATION; 		dtv[1].u.data = modulation;
-		dtv[2].cmd = DTV_SYMBOL_RATE; 		dtv[2].u.data = symbol_rate;
-		dtv[3].cmd = DTV_INVERSION; 		dtv[3].u.data = inversion;
-		dtv[4].cmd = DTV_INNER_FEC; 		dtv[4].u.data = FEC_AUTO;
-		dtv[5].cmd = DTV_TUNE;
-
-		cmdseq.num = 6;
+		SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_SYMBOL_RATE, symbol_rate);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_INNER_FEC, FEC_AUTO);
 
 	} else if((delivery_system == SYS_DVBT) || (delivery_system == SYS_DVBT2)) { //DVB-T/T2
-		int32_t propCount;
 		printf( "Tune frontend on:\n"
 				"\tfreq        = %9d Hz\n"
 				"\tmodulation  = %s\n",
 				frequency, get_modulation_name(modulation));
 
-		dtv[0].cmd = DTV_FREQUENCY; 		dtv[0].u.data = frequency;//(12666000-10600000);
-		dtv[1].cmd = DTV_INVERSION; 		dtv[1].u.data = inversion;
-		dtv[2].cmd = DTV_BANDWIDTH_HZ; 		dtv[2].u.data = BANDWIDTH_8_MHZ;//BANDWIDTH_AUTO
-		dtv[3].cmd = DTV_CODE_RATE_HP; 		dtv[3].u.data = FEC_AUTO;//FEC_7_8;
-		dtv[4].cmd = DTV_CODE_RATE_LP; 		dtv[4].u.data = FEC_AUTO;//FEC_7_8;
-		dtv[5].cmd = DTV_MODULATION; 		dtv[5].u.data = modulation;
-		dtv[6].cmd = DTV_TRANSMISSION_MODE;	dtv[6].u.data = TRANSMISSION_MODE_AUTO;//TRANSMISSION_MODE_8K;
-		dtv[7].cmd = DTV_GUARD_INTERVAL; 	dtv[7].u.data = GUARD_INTERVAL_AUTO;//GUARD_INTERVAL_1_16
-		dtv[8].cmd = DTV_HIERARCHY; 		dtv[8].u.data = HIERARCHY_AUTO;
-		propCount = 9;
-		if(delivery_system == SYS_DVBT2) {
-			dtv[propCount].cmd = DTV_STREAM_ID; 	dtv[9].u.data = plp_id;
-			propCount++;
-		}
-		dtv[propCount].cmd = DTV_TUNE;
-		propCount++;
+		SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_BANDWIDTH_HZ, BANDWIDTH_8_MHZ);//BANDWIDTH_AUTO
+		SET_DTV_PRPERTY(dtv, propCount, DTV_CODE_RATE_HP, FEC_AUTO);//FEC_7_8
+		SET_DTV_PRPERTY(dtv, propCount, DTV_CODE_RATE_LP, FEC_AUTO);//FEC_7_8
+		SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_TRANSMISSION_MODE, TRANSMISSION_MODE_AUTO);//TRANSMISSION_MODE_8K
+		SET_DTV_PRPERTY(dtv, propCount, DTV_GUARD_INTERVAL, GUARD_INTERVAL_AUTO);//GUARD_INTERVAL_1_16
+		SET_DTV_PRPERTY(dtv, propCount, DTV_HIERARCHY, HIERARCHY_AUTO);
 
-		cmdseq.num = propCount;
+		if(delivery_system == SYS_DVBT2) {
+			SET_DTV_PRPERTY(dtv, propCount, DTV_STREAM_ID, plp_id);
+		}
 
 	} else if((delivery_system == SYS_ATSC) || (delivery_system == SYS_DVBC_ANNEX_B)) { //ATSC
 		printf( "Tune frontend on:\n"
@@ -465,18 +497,51 @@ int main(int argc, char **argv)
 				"\tmodulation  = %s\n",
 				frequency, get_modulation_name(modulation));
 
-		dtv[0].cmd = DTV_FREQUENCY; 		dtv[0].u.data = frequency;//(12666000-10600000);
-		dtv[1].cmd = DTV_MODULATION; 		dtv[1].u.data = modulation;//VSB_8
-		dtv[2].cmd = DTV_INVERSION; 		dtv[1].u.data = inversion;//INVERSION_ON;
-		dtv[3].cmd = DTV_TUNE;
+		SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);//INVERSION_ON
+		SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);//VSB_8
 
-		cmdseq.num = 4;
+	} else if((delivery_system == SYS_DVBS) || (delivery_system == SYS_DVBS2)) {//DVB-C
+		uint32_t freqLO;
+		uint32_t tone = SEC_TONE_OFF;
+
+		if((TUNER_C_BAND_START <= frequency) && (frequency <= TUNER_C_BAND_END)) {
+			freqLO = 5150000;
+			tone = SEC_TONE_OFF;
+		} else if((TUNER_KU_LOW_BAND_START <= frequency) && (frequency <= TUNER_KU_LOW_BAND_END)) {
+			freqLO = 9750000;
+			tone = SEC_TONE_OFF;
+		} else if((TUNER_KU_HIGH_BAND_START <= frequency) && (frequency <= TUNER_KU_HIGH_BAND_END)) {
+			freqLO = 10600000;
+			tone = SEC_TONE_ON;
+		} else {
+			printf("%s()[%d]: !!!!!!\n", __func__, __LINE__);
+		}
+		//north america: freqLO = 11250000
+		frequency -= freqLO;
+
+		printf( "Tune frontend on:\n"
+				"\tfreq         = %9d KHz\n"
+				"\tfreqLO       = %9d KHz\n"
+				"\tsymbol_rate  = %9d Hz\n"
+				"\tmodulation   = %s\n"
+				"\tpolarization = %s\n",
+				frequency, freqLO, symbol_rate, get_modulation_name(modulation), get_polarization_name(polarization));
+
+		SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);//INVERSION_ON
+		SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_SYMBOL_RATE, symbol_rate);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_VOLTAGE, polarization);
+		SET_DTV_PRPERTY(dtv, propCount, DTV_TONE, tone);
 
 	} else {
-		printf("Not supported delivery system: %s\n", get_delivery_system_name(delivery_system));
+		printf("Not supported delivery system: %s\n", get_delSys_name(delivery_system));
 		return -2;
 	}
-
+	dtv[propCount].cmd = DTV_TUNE;
+	propCount++;
+	cmdseq.num = propCount;
 	cmdseq.props = dtv;
 
 	if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
