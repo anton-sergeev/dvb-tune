@@ -337,6 +337,53 @@ int32_t dvb_openFronend(uint32_t adap, uint32_t fe, int32_t *fd)
 	return -1;
 }
 
+
+int dvb_diseqcSend(int frontend_fd, const uint8_t* tx, size_t tx_len)
+{
+	struct dvb_diseqc_master_cmd cmd;
+	size_t i;
+
+	printf("%s: sending %d:\n", __func__, tx_len);
+	for(i = 0; i < tx_len; i++) {
+		printf(" 0x%02x", tx[i]);
+	}
+	printf("\n");
+
+	cmd.msg_len = tx_len;
+	memcpy(cmd.msg, tx, cmd.msg_len);
+	ioctl(frontend_fd, FE_DISEQC_SEND_MASTER_CMD, &cmd);
+
+	return 0;
+}
+
+static inline uint8_t diseqc_data_lo(int satellite_position, int is_vertical, uint32_t f_khz)
+{
+	return (satellite_position & 0x03) << 2 | (is_vertical ? 0 : 1) << 1 | (f_khz > 11700000);
+}
+
+typedef enum {
+	diseqcSwitchNone = 0,
+	diseqcSwitchSimple,
+	diseqcSwitchMulti,
+	diseqcSwitchTypeCount,
+} diseqcSwitchType_t;
+uint32_t g_uncommited = 0;
+
+int dvb_diseqcSetup(int frontend_fd, uint32_t frequency, diseqcSwitchType_t type, uint32_t port, uint32_t polarization)
+{
+	if(g_uncommited) {
+		uint8_t ucmd[4] = { 0xe0, 0x10, 0x39, g_uncommited - 1 };
+		dvb_diseqcSend(frontend_fd, ucmd, 4);
+	}
+
+	int _port = (type == diseqcSwitchMulti) ? port & 1 : port;
+	uint8_t data_hi = (type == diseqcSwitchMulti) ? 0x70 : 0xF0;
+	uint8_t cmd[4] = { 0xe0, 0x10, 0x38, data_hi | diseqc_data_lo(_port, (polarization == SEC_VOLTAGE_13), frequency) };
+
+	dvb_diseqcSend(frontend_fd, cmd, 4);
+	return 0;
+}
+
 static void usage(char *progname)
 {
 	table_IntStr_t *table_IntStr_ptr;
@@ -355,7 +402,7 @@ static void usage(char *progname)
 	}
 	printf("> - Select delivery type\n");
 
-	printf("\t-f, --frequency=FREQUENCY     - Set frequency in Hz\n");
+	printf("\t-f, --frequency=FREQUENCY     - Set frequency in Hz (in KHz for sattelite delivery system)\n");
 	printf("\t-s, --symbol-rate=SYMBOLRATE  - Set symbol rate in symbol per second\n");
 	printf("\t-p, --plp-id=PLPID            - Set plp id (for DVB-T2)\n");
 
@@ -369,6 +416,7 @@ static void usage(char *progname)
 	printf("\t-c, --close-fe                - Close frontend at the end (infinity wait is default)\n");
 	printf("\t-w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
 	printf("\t-z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V\n");
+	printf("\t-q, --dyseqc=PORT             - Use dyseqc SwitchSimple PORT (for satelite delivery system only)\n");
 
 	return;
 }
@@ -395,6 +443,7 @@ int main(int argc, char **argv)
 	int32_t					has_lock = 0;
 	int32_t					polarization = SEC_VOLTAGE_13;//0 - horizontal, 1 - vertical
 	int32_t					propCount = 0;
+	int32_t					dyseqc_port = -1;
 	static struct option	long_options[] = {
 		{"help",		no_argument,		0, 'h'},
 		{"info",		no_argument,		0, 'i'},
@@ -410,10 +459,11 @@ int main(int argc, char **argv)
 		{"wait-count",	required_argument,	0, 'w'},
 		{"polarization",required_argument,	0, 'z'},
 		{"pol",			required_argument,	0, 'z'},
+		{"dyseqc",		required_argument,	0, 'q'},
 		{0, 0, 0, 0},
 	};
 
-	while((opt = getopt_long(argc, argv, "hivd:t:f:s:m:p:n:cw:z:", long_options, &option_index)) != -1) {
+	while((opt = getopt_long(argc, argv, "hivd:t:f:s:m:p:n:cw:z:q:", long_options, &option_index)) != -1) {
 		switch(opt) {
 			case 'h':
 				usage(argv[0]);
@@ -461,6 +511,9 @@ int main(int argc, char **argv)
 			case 'z':
 				polarization = parse_polarization_name(optarg);
 				break;
+			case 'y':
+				dyseqc_port = atoi(optarg);
+				break;
 			default:
 				usage(argv[0]);
 				return -3;
@@ -506,7 +559,7 @@ int main(int argc, char **argv)
 
 		SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
 		SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_BANDWIDTH_HZ, BANDWIDTH_8_MHZ);//BANDWIDTH_AUTO
+		SET_DTV_PRPERTY(dtv, propCount, DTV_BANDWIDTH_HZ, 8000000);//BANDWIDTH_AUTO
 		SET_DTV_PRPERTY(dtv, propCount, DTV_CODE_RATE_HP, FEC_AUTO);//FEC_7_8
 		SET_DTV_PRPERTY(dtv, propCount, DTV_CODE_RATE_LP, FEC_AUTO);//FEC_7_8
 		SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);
@@ -531,6 +584,11 @@ int main(int argc, char **argv)
 	} else if((delivery_system == SYS_DVBS) || (delivery_system == SYS_DVBS2)) {//DVB-C
 		uint32_t freqLO;
 		uint32_t tone = SEC_TONE_OFF;
+
+		//diseqc
+		if((dyseqc_port >= 0) && (dyseqc_port < 4)) {
+			dvb_diseqcSetup(fd_frontend, frequency, diseqcSwitchSimple, dyseqc_port, polarization);
+		}
 
 		if((TUNER_C_BAND_START <= frequency) && (frequency <= TUNER_C_BAND_END)) {
 			freqLO = 5150000;
