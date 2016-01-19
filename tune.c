@@ -511,7 +511,7 @@ int main(int argc, char **argv)
 			case 'z':
 				polarization = parse_polarization_name(optarg);
 				break;
-			case 'y':
+			case 'q':
 				dyseqc_port = atoi(optarg);
 				break;
 			default:
