@@ -317,7 +317,7 @@ int dvb_setFrontendType(int32_t fd_frontend, fe_delivery_system_t type)
 	return 0;
 }
 
-int32_t dvb_openFronend(uint32_t adap, uint32_t fe, int32_t *fd)
+int32_t dvb_openFronend(uint32_t adap, uint32_t fe, int32_t *fd, int32_t read_only)
 {
 	char *pathTemplate[] = {
 		"/dev/dvb%d.frontend%d",
@@ -329,7 +329,7 @@ int32_t dvb_openFronend(uint32_t adap, uint32_t fe, int32_t *fd)
 		char buf[CMD_BUF_SIZE];
 		snprintf(buf, sizeof(buf), pathTemplate[i], adap, fe);
 		printf("Try to open %s ... ", buf);
-		if((*fd = open(buf, O_RDWR)) >= 0) {
+		if((*fd = open(buf, read_only ? O_RDONLY : O_RDWR)) >= 0) {
 			printf("success\n");
 			return 0;
 		}
@@ -420,6 +420,7 @@ static void usage(char *progname)
 	printf("\t-w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
 	printf("\t-z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V\n");
 	printf("\t-q, --dyseqc=PORT             - Use dyseqc SwitchSimple PORT (for satelite delivery system only)\n");
+	printf("\t-r, --read-only               - Don't setup tuner, just read state\n");
 
 	return;
 }
@@ -453,6 +454,7 @@ int main(int argc, char **argv)
 	int32_t					polarization = SEC_VOLTAGE_13;//0 - horizontal, 1 - vertical
 	int32_t					propCount = 0;
 	int32_t					dyseqc_port = -1;
+	int32_t					read_only = 0;
 	static struct option	long_options[] = {
 		{"help",		no_argument,		0, 'h'},
 		{"version",		no_argument,		0, 'V'},
@@ -470,10 +472,11 @@ int main(int argc, char **argv)
 		{"polarization",required_argument,	0, 'z'},
 		{"pol",			required_argument,	0, 'z'},
 		{"dyseqc",		required_argument,	0, 'q'},
+		{"read-only",		no_argument,	0, 'r'},
 		{0, 0, 0, 0},
 	};
 
-	while((opt = getopt_long(argc, argv, "hVivd:t:f:s:m:p:n:cw:z:q:", long_options, &option_index)) != -1) {
+	while((opt = getopt_long(argc, argv, "hVivd:t:f:s:m:p:n:cw:z:q:r", long_options, &option_index)) != -1) {
 		switch(opt) {
 			case 'h':
 				usage(argv[0]);
@@ -528,6 +531,9 @@ int main(int argc, char **argv)
 			case 'q':
 				dyseqc_port = atoi(optarg);
 				break;
+			case 'r':
+				read_only = 1;
+				break;
 			default:
 				usage(argv[0]);
 				return -3;
@@ -535,120 +541,126 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(frequency == 0) {
-		printf("ERROR: Frequency not setted!\n");
-		usage(argv[0]);
-		return -5;
-	}
-
-	if(dvb_openFronend(device, 0, &fd_frontend) != 0) {
+	if(dvb_openFronend(device, 0, &fd_frontend, read_only) != 0) {
 		printf("%s[%d]: Error open device=%d frontend\n", __FILE__, __LINE__, device);
 		return -1;
 	}
 
-	dvb_setFrontendType(fd_frontend, delivery_system);
-	if(show_tuner_info) {
-		dvb_printFrontendInfo(fd_frontend);
-	}
-	printf( "Selected delivery sistem: %s\n", get_delSys_name(delivery_system));
-
-	if(delivery_system == SYS_DVBC_ANNEX_A) {//DVB-C
-		printf( "Tune frontend on:\n"
-				"\tfreq        = %9d Hz\n"
-				"\tsymbol_rate = %9d Hz\n"
-				"\tmodulation  = %s\n",
-				frequency, symbol_rate, get_modulation_name(modulation));
-
-		SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_SYMBOL_RATE, symbol_rate);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_INNER_FEC, FEC_AUTO);
-
-	} else if((delivery_system == SYS_DVBT) || (delivery_system == SYS_DVBT2)) { //DVB-T/T2
-		printf( "Tune frontend on:\n"
-				"\tfreq        = %9d Hz\n"
-				"\tmodulation  = %s\n",
-				frequency, get_modulation_name(modulation));
-
-		SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_BANDWIDTH_HZ, 8000000);//BANDWIDTH_AUTO
-		SET_DTV_PRPERTY(dtv, propCount, DTV_CODE_RATE_HP, FEC_AUTO);//FEC_7_8
-		SET_DTV_PRPERTY(dtv, propCount, DTV_CODE_RATE_LP, FEC_AUTO);//FEC_7_8
-		SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_TRANSMISSION_MODE, TRANSMISSION_MODE_AUTO);//TRANSMISSION_MODE_8K
-		SET_DTV_PRPERTY(dtv, propCount, DTV_GUARD_INTERVAL, GUARD_INTERVAL_AUTO);//GUARD_INTERVAL_1_16
-		SET_DTV_PRPERTY(dtv, propCount, DTV_HIERARCHY, HIERARCHY_AUTO);
-
-		if(delivery_system == SYS_DVBT2) {
-			SET_DTV_PRPERTY(dtv, propCount, DTV_STREAM_ID, plp_id);
+	if(read_only == 0) {
+		if(frequency == 0) {
+			printf("ERROR: Frequency not setted!\n");
+			usage(argv[0]);
+			return -5;
 		}
 
-	} else if((delivery_system == SYS_ATSC) || (delivery_system == SYS_DVBC_ANNEX_B)) { //ATSC
-		printf( "Tune frontend on:\n"
-				"\tfreq        = %9d Hz\n"
-				"\tmodulation  = %s\n",
-				frequency, get_modulation_name(modulation));
-
-		SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);//INVERSION_ON
-		SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);//VSB_8
-
-	} else if((delivery_system == SYS_DVBS) || (delivery_system == SYS_DVBS2)) {//DVB-C
-		uint32_t freqLO;
-		uint32_t tone = SEC_TONE_OFF;
-
-		//diseqc
-		if((dyseqc_port >= 0) && (dyseqc_port < 4)) {
-			dvb_diseqcSetup(fd_frontend, frequency, diseqcSwitchSimple, dyseqc_port, polarization);
+		dvb_setFrontendType(fd_frontend, delivery_system);
+		if(show_tuner_info) {
+			dvb_printFrontendInfo(fd_frontend);
 		}
+		printf( "Selected delivery sistem: %s\n", get_delSys_name(delivery_system));
 
-		if((TUNER_C_BAND_START <= frequency) && (frequency <= TUNER_C_BAND_END)) {
-			freqLO = 5150000;
-			tone = SEC_TONE_OFF;
-		} else if((TUNER_KU_LOW_BAND_START <= frequency) && (frequency <= TUNER_KU_LOW_BAND_END)) {
-			freqLO = 9750000;
-			tone = SEC_TONE_OFF;
-		} else if((TUNER_KU_HIGH_BAND_START <= frequency) && (frequency <= TUNER_KU_HIGH_BAND_END)) {
-			freqLO = 10600000;
-			tone = SEC_TONE_ON;
+		if(delivery_system == SYS_DVBC_ANNEX_A) {//DVB-C
+			printf( "Tune frontend on:\n"
+					"\tfreq        = %9d Hz\n"
+					"\tsymbol_rate = %9d Hz\n"
+					"\tmodulation  = %s\n",
+					frequency, symbol_rate, get_modulation_name(modulation));
+
+			SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_SYMBOL_RATE, symbol_rate);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_INNER_FEC, FEC_AUTO);
+
+		} else if((delivery_system == SYS_DVBT) || (delivery_system == SYS_DVBT2)) { //DVB-T/T2
+			printf( "Tune frontend on:\n"
+					"\tfreq        = %9d Hz\n"
+					"\tmodulation  = %s\n",
+					frequency, get_modulation_name(modulation));
+
+			SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_BANDWIDTH_HZ, 8000000);//BANDWIDTH_AUTO
+			SET_DTV_PRPERTY(dtv, propCount, DTV_CODE_RATE_HP, FEC_AUTO);//FEC_7_8
+			SET_DTV_PRPERTY(dtv, propCount, DTV_CODE_RATE_LP, FEC_AUTO);//FEC_7_8
+			SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_TRANSMISSION_MODE, TRANSMISSION_MODE_AUTO);//TRANSMISSION_MODE_8K
+			SET_DTV_PRPERTY(dtv, propCount, DTV_GUARD_INTERVAL, GUARD_INTERVAL_AUTO);//GUARD_INTERVAL_1_16
+			SET_DTV_PRPERTY(dtv, propCount, DTV_HIERARCHY, HIERARCHY_AUTO);
+
+			if(delivery_system == SYS_DVBT2) {
+				SET_DTV_PRPERTY(dtv, propCount, DTV_STREAM_ID, plp_id);
+			}
+
+		} else if((delivery_system == SYS_ATSC) || (delivery_system == SYS_DVBC_ANNEX_B)) { //ATSC
+			printf( "Tune frontend on:\n"
+					"\tfreq        = %9d Hz\n"
+					"\tmodulation  = %s\n",
+					frequency, get_modulation_name(modulation));
+
+			SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);//INVERSION_ON
+			SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);//VSB_8
+
+		} else if((delivery_system == SYS_DVBS) || (delivery_system == SYS_DVBS2)) {//DVB-C
+			uint32_t freqLO;
+			uint32_t tone = SEC_TONE_OFF;
+
+			//diseqc
+			if((dyseqc_port >= 0) && (dyseqc_port < 4)) {
+				dvb_diseqcSetup(fd_frontend, frequency, diseqcSwitchSimple, dyseqc_port, polarization);
+			}
+
+			if((TUNER_C_BAND_START <= frequency) && (frequency <= TUNER_C_BAND_END)) {
+				freqLO = 5150000;
+				tone = SEC_TONE_OFF;
+			} else if((TUNER_KU_LOW_BAND_START <= frequency) && (frequency <= TUNER_KU_LOW_BAND_END)) {
+				freqLO = 9750000;
+				tone = SEC_TONE_OFF;
+			} else if((TUNER_KU_HIGH_BAND_START <= frequency) && (frequency <= TUNER_KU_HIGH_BAND_END)) {
+				freqLO = 10600000;
+				tone = SEC_TONE_ON;
+			} else {
+				printf("%s()[%d]: !!!!!!\n", __func__, __LINE__);
+			}
+			//north america: freqLO = 11250000
+			frequency -= freqLO;
+
+			printf( "Tune frontend on:\n"
+					"\tfreq         = %9d KHz\n"
+					"\tfreqLO       = %9d KHz\n"
+					"\tsymbol_rate  = %9d Hz\n"
+					"\tmodulation   = %s\n"
+					"\tpolarization = %s\n",
+					frequency, freqLO, symbol_rate, get_modulation_name(modulation), get_polarization_name(polarization));
+
+			SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);//INVERSION_ON
+			SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_SYMBOL_RATE, symbol_rate);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_VOLTAGE, polarization);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_TONE, tone);
+
 		} else {
-			printf("%s()[%d]: !!!!!!\n", __func__, __LINE__);
+			printf("Not supported delivery system: %s\n", get_delSys_name(delivery_system));
+			return -2;
 		}
-		//north america: freqLO = 11250000
-		frequency -= freqLO;
+		dtv[propCount].cmd = DTV_TUNE;
+		propCount++;
+		cmdseq.num = propCount;
+		cmdseq.props = dtv;
 
-		printf( "Tune frontend on:\n"
-				"\tfreq         = %9d KHz\n"
-				"\tfreqLO       = %9d KHz\n"
-				"\tsymbol_rate  = %9d Hz\n"
-				"\tmodulation   = %s\n"
-				"\tpolarization = %s\n",
-				frequency, freqLO, symbol_rate, get_modulation_name(modulation), get_polarization_name(polarization));
+		if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
+			perror("FRONTEND FE_SET_FRONTEND: ");
+			return -3;
+		}
 
-		SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);//INVERSION_ON
-		SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_SYMBOL_RATE, symbol_rate);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_VOLTAGE, polarization);
-		SET_DTV_PRPERTY(dtv, propCount, DTV_TONE, tone);
-
+		usleep(10000);//10ms
 	} else {
-		printf("Not supported delivery system: %s\n", get_delSys_name(delivery_system));
-		return -2;
+		if(show_tuner_info) {
+			dvb_printFrontendInfo(fd_frontend);
+		}
 	}
-	dtv[propCount].cmd = DTV_TUNE;
-	propCount++;
-	cmdseq.num = propCount;
-	cmdseq.props = dtv;
-
-	if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
-		perror("FRONTEND FE_SET_FRONTEND: ");
-		return -3;
-	}
-
-	usleep(10000);//10ms
 
 	while(1) {
 		uint32_t status;
