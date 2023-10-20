@@ -345,7 +345,7 @@ int dvb_diseqcSend(int frontend_fd, const uint8_t* tx, size_t tx_len)
 	struct dvb_diseqc_master_cmd cmd;
 	size_t i;
 
-	printf("%s: sending %d:\n", __func__, tx_len);
+	printf("%s: sending %zu:\n", __func__, tx_len);
 	for(i = 0; i < tx_len; i++) {
 		printf(" 0x%02x", tx[i]);
 	}
