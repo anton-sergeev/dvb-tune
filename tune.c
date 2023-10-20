@@ -21,41 +21,41 @@
 /******************************************************************
 * LOCAL MACROS                                                    *
 *******************************************************************/
-#define CMD_BUF_SIZE	256
+#define CMD_BUF_SIZE  256
 //#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,33))
 //#define SYS_DVBC_ANNEX_A SYS_DVBC_ANNEX_AC
 //#endif
 
-#define ARRAY_SIZE(arr)	(sizeof(arr) / sizeof(arr[0]))
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #define SET_DTV_PRPERTY(prop, id, _cmd, val) \
 		{ \
 			prop[id].cmd = _cmd; \
 			prop[id].u.data = val; \
 			id++; \
- 		}
+		}
 
-#define TABLE_INT_END_VALUE			0xdeadbeaf
-#define TABLE_STR_END_VALUE			NULL
-#define TABLE_INT_STR_END_VALUE		{TABLE_INT_END_VALUE, TABLE_STR_END_VALUE}
+#define TABLE_INT_END_VALUE     0xdeadbeaf
+#define TABLE_STR_END_VALUE     NULL
+#define TABLE_INT_STR_END_VALUE {TABLE_INT_END_VALUE, TABLE_STR_END_VALUE}
 
-#define TUNER_C_BAND_START			 3000000 /*kHZ*/
-#define TUNER_C_BAND_END			 4200000 /*kHZ*/
-#define TUNER_KU_LOW_BAND_START		10700000 /*kHZ*/
-#define TUNER_KU_LOW_BAND_END		11700000 /*kHZ*/
-#define TUNER_KU_HIGH_BAND_START	11700001 /*kHZ*/
-#define TUNER_KU_HIGH_BAND_END		12750000 /*kHZ*/
+#define TUNER_C_BAND_START         3000000 /*kHZ*/
+#define TUNER_C_BAND_END           4200000 /*kHZ*/
+#define TUNER_KU_LOW_BAND_START   10700000 /*kHZ*/
+#define TUNER_KU_LOW_BAND_END     11700000 /*kHZ*/
+#define TUNER_KU_HIGH_BAND_START  11700001 /*kHZ*/
+#define TUNER_KU_HIGH_BAND_END    12750000 /*kHZ*/
 
-#define get_modulation_name(mod)			table_IntStrLookup(fe_mod_desc, mod, "unknown")
-#define parse_modulation(modName)			table_IntStrLookupR(fe_mod_desc, modName, QAM_AUTO)
+#define get_modulation_name(mod)          table_IntStrLookup(fe_mod_desc, mod, "unknown")
+#define parse_modulation(modName)         table_IntStrLookupR(fe_mod_desc, modName, QAM_AUTO)
 
-#define get_delSys_name(delSys)				table_IntStrLookup(delivery_system_desc, delSys, "unknown")
-#define parse_delivery(delSysName)			table_IntStrLookupR(delivery_system_desc, delSysName, SYS_UNDEFINED)
+#define get_delSys_name(delSys)           table_IntStrLookup(delivery_system_desc, delSys, "unknown")
+#define parse_delivery(delSysName)        table_IntStrLookupR(delivery_system_desc, delSysName, SYS_UNDEFINED)
 
-#define get_polarization_name(pol)			table_IntStrLookup(fe_pol_desc, pol, "unknown")
-#define parse_polarization_name(polName)	table_IntStrLookupR(fe_pol_desc, polName, SEC_VOLTAGE_13)
+#define get_polarization_name(pol)        table_IntStrLookup(fe_pol_desc, pol, "unknown")
+#define parse_polarization_name(polName)  table_IntStrLookupR(fe_pol_desc, polName, SEC_VOLTAGE_13)
 
-#define get_feType_name(type)				table_IntStrLookup(fe_typeNames, type, "unknown")
+#define get_feType_name(type)             table_IntStrLookup(fe_typeNames, type, "unknown")
 
 /******************************************************************
 * LOCAL TYPEDEFS                                                  *
@@ -72,106 +72,106 @@ typedef struct {
 const char *version_str = "1.0 (2014-11-11)";
 
 table_IntStr_t fe_typeNames[] = {
-	{FE_QPSK,	"DVB-S"},
-	{FE_QAM,	"DVB-C"},
-	{FE_OFDM,	"DVB-T"},
-	{FE_ATSC,	"ATSC"},
+	{FE_QPSK, "DVB-S"},
+	{FE_QAM,  "DVB-C"},
+	{FE_OFDM, "DVB-T"},
+	{FE_ATSC, "ATSC"},
 	TABLE_INT_STR_END_VALUE
 };
 
 table_IntStr_t delivery_system_desc[] = {
-	{SYS_UNDEFINED,		"SYS_UNDEFINED"},
-	{SYS_DVBC_ANNEX_A,	"SYS_DVBC_ANNEX_A"},//DVB-C
-	{SYS_DVBC_ANNEX_B,	"SYS_DVBC_ANNEX_B"},
-	{SYS_DVBT,			"SYS_DVBT"},
-	{SYS_DSS,			"SYS_DSS"},
-	{SYS_DVBS,			"SYS_DVBS"},
-	{SYS_DVBS2,			"SYS_DVBS2"},
-	{SYS_DVBH,			"SYS_DVBH"},
-	{SYS_ISDBT,			"SYS_ISDBT"},
-	{SYS_ISDBS,			"SYS_ISDBS"},
-	{SYS_ISDBC,			"SYS_ISDBC"},
-	{SYS_ATSC,			"SYS_ATSC"},
-	{SYS_ATSCMH,		"SYS_ATSCMH"},
-	{SYS_DMBTH,			"SYS_DMBTH"},
-	{SYS_CMMB,			"SYS_CMMB"},
-	{SYS_DAB,			"SYS_DAB"},
-	{SYS_DVBT2,			"SYS_DVBT2"},
-	{SYS_TURBO,			"SYS_TURBO"},
-	{SYS_DVBC_ANNEX_C,	"SYS_DVBC_ANNEX_C"},
+	{SYS_UNDEFINED,    "SYS_UNDEFINED"},
+	{SYS_DVBC_ANNEX_A, "SYS_DVBC_ANNEX_A"},//DVB-C
+	{SYS_DVBC_ANNEX_B, "SYS_DVBC_ANNEX_B"},
+	{SYS_DVBT,         "SYS_DVBT"},
+	{SYS_DSS,          "SYS_DSS"},
+	{SYS_DVBS,         "SYS_DVBS"},
+	{SYS_DVBS2,        "SYS_DVBS2"},
+	{SYS_DVBH,         "SYS_DVBH"},
+	{SYS_ISDBT,        "SYS_ISDBT"},
+	{SYS_ISDBS,        "SYS_ISDBS"},
+	{SYS_ISDBC,        "SYS_ISDBC"},
+	{SYS_ATSC,         "SYS_ATSC"},
+	{SYS_ATSCMH,       "SYS_ATSCMH"},
+	{SYS_DMBTH,        "SYS_DMBTH"},
+	{SYS_CMMB,         "SYS_CMMB"},
+	{SYS_DAB,          "SYS_DAB"},
+	{SYS_DVBT2,        "SYS_DVBT2"},
+	{SYS_TURBO,        "SYS_TURBO"},
+	{SYS_DVBC_ANNEX_C, "SYS_DVBC_ANNEX_C"},
 	TABLE_INT_STR_END_VALUE
 };
 
 table_IntStr_t fe_caps_desc[] = {
-	{FE_IS_STUPID,					"FE_IS_STUPID"},
-	{FE_CAN_INVERSION_AUTO,			"FE_CAN_INVERSION_AUTO"},
-	{FE_CAN_FEC_1_2,				"FE_CAN_FEC_1_2"},
-	{FE_CAN_FEC_2_3,				"FE_CAN_FEC_2_3"},
-	{FE_CAN_FEC_3_4,				"FE_CAN_FEC_3_4"},
-	{FE_CAN_FEC_4_5,				"FE_CAN_FEC_4_5"},
-	{FE_CAN_FEC_5_6,				"FE_CAN_FEC_5_6"},
-	{FE_CAN_FEC_6_7,				"FE_CAN_FEC_6_7"},
-	{FE_CAN_FEC_7_8,				"FE_CAN_FEC_7_8"},
-	{FE_CAN_FEC_8_9,				"FE_CAN_FEC_8_9"},
-	{FE_CAN_FEC_AUTO,				"FE_CAN_FEC_AUTO"},
-	{FE_CAN_QPSK,					"FE_CAN_QPSK"},
-	{FE_CAN_QAM_16,					"FE_CAN_QAM_16"},
-	{FE_CAN_QAM_32,					"FE_CAN_QAM_32"},
-	{FE_CAN_QAM_64,					"FE_CAN_QAM_64"},
-	{FE_CAN_QAM_128,				"FE_CAN_QAM_128"},
-	{FE_CAN_QAM_256,				"FE_CAN_QAM_256"},
-	{FE_CAN_QAM_AUTO,				"FE_CAN_QAM_AUTO"},
-	{FE_CAN_TRANSMISSION_MODE_AUTO,	"FE_CAN_TRANSMISSION_MODE_AUTO"},
-	{FE_CAN_BANDWIDTH_AUTO,			"FE_CAN_BANDWIDTH_AUTO"},
-	{FE_CAN_GUARD_INTERVAL_AUTO,	"FE_CAN_GUARD_INTERVAL_AUTO"},
-	{FE_CAN_HIERARCHY_AUTO,			"FE_CAN_HIERARCHY_AUTO"},
-	{FE_CAN_8VSB,					"FE_CAN_8VSB"},
-	{FE_CAN_16VSB,					"FE_CAN_16VSB"},
-	{FE_HAS_EXTENDED_CAPS,			"FE_HAS_EXTENDED_CAPS"},
-	{FE_CAN_2G_MODULATION,			"FE_CAN_2G_MODULATION"},
-	{FE_NEEDS_BENDING,				"FE_NEEDS_BENDING"},
-	{FE_CAN_RECOVER,				"FE_CAN_RECOVER"},
-	{FE_CAN_MUTE_TS,				"FE_CAN_MUTE_TS"},
+	{FE_IS_STUPID,                   "FE_IS_STUPID"},
+	{FE_CAN_INVERSION_AUTO,          "FE_CAN_INVERSION_AUTO"},
+	{FE_CAN_FEC_1_2,                 "FE_CAN_FEC_1_2"},
+	{FE_CAN_FEC_2_3,                 "FE_CAN_FEC_2_3"},
+	{FE_CAN_FEC_3_4,                 "FE_CAN_FEC_3_4"},
+	{FE_CAN_FEC_4_5,                 "FE_CAN_FEC_4_5"},
+	{FE_CAN_FEC_5_6,                 "FE_CAN_FEC_5_6"},
+	{FE_CAN_FEC_6_7,                 "FE_CAN_FEC_6_7"},
+	{FE_CAN_FEC_7_8,                 "FE_CAN_FEC_7_8"},
+	{FE_CAN_FEC_8_9,                 "FE_CAN_FEC_8_9"},
+	{FE_CAN_FEC_AUTO,                "FE_CAN_FEC_AUTO"},
+	{FE_CAN_QPSK,                    "FE_CAN_QPSK"},
+	{FE_CAN_QAM_16,                  "FE_CAN_QAM_16"},
+	{FE_CAN_QAM_32,                  "FE_CAN_QAM_32"},
+	{FE_CAN_QAM_64,                  "FE_CAN_QAM_64"},
+	{FE_CAN_QAM_128,                 "FE_CAN_QAM_128"},
+	{FE_CAN_QAM_256,                 "FE_CAN_QAM_256"},
+	{FE_CAN_QAM_AUTO,                "FE_CAN_QAM_AUTO"},
+	{FE_CAN_TRANSMISSION_MODE_AUTO,  "FE_CAN_TRANSMISSION_MODE_AUTO"},
+	{FE_CAN_BANDWIDTH_AUTO,          "FE_CAN_BANDWIDTH_AUTO"},
+	{FE_CAN_GUARD_INTERVAL_AUTO,     "FE_CAN_GUARD_INTERVAL_AUTO"},
+	{FE_CAN_HIERARCHY_AUTO,          "FE_CAN_HIERARCHY_AUTO"},
+	{FE_CAN_8VSB,                    "FE_CAN_8VSB"},
+	{FE_CAN_16VSB,                   "FE_CAN_16VSB"},
+	{FE_HAS_EXTENDED_CAPS,           "FE_HAS_EXTENDED_CAPS"},
+	{FE_CAN_2G_MODULATION,           "FE_CAN_2G_MODULATION"},
+	{FE_NEEDS_BENDING,               "FE_NEEDS_BENDING"},
+	{FE_CAN_RECOVER,                 "FE_CAN_RECOVER"},
+	{FE_CAN_MUTE_TS,                 "FE_CAN_MUTE_TS"},
 	TABLE_INT_STR_END_VALUE
 };
 
 table_IntStr_t fe_mod_desc[] = {
-	{QPSK,		"QPSK"},
-	{QAM_16,	"QAM_16"},
-	{QAM_32,	"QAM_32"},
-	{QAM_64,	"QAM_64"},
-	{QAM_128,	"QAM_128"},
-	{QAM_256,	"QAM_256"},
-	{QAM_AUTO,	"QAM_AUTO"},
-	{VSB_8,		"VSB_8"},
-	{VSB_16,	"VSB_16"},
-	{PSK_8,		"PSK_8"},
-	{APSK_16,	"APSK_16"},
-	{APSK_32,	"APSK_32"},
-	{DQPSK,		"DQPSK"},
-	{QAM_4_NR,	"QAM_4_NR"},
+	{QPSK,     "QPSK"},
+	{QAM_16,   "QAM_16"},
+	{QAM_32,   "QAM_32"},
+	{QAM_64,   "QAM_64"},
+	{QAM_128,  "QAM_128"},
+	{QAM_256,  "QAM_256"},
+	{QAM_AUTO, "QAM_AUTO"},
+	{VSB_8,    "VSB_8"},
+	{VSB_16,   "VSB_16"},
+	{PSK_8,    "PSK_8"},
+	{APSK_16,  "APSK_16"},
+	{APSK_32,  "APSK_32"},
+	{DQPSK,    "DQPSK"},
+	{QAM_4_NR, "QAM_4_NR"},
 	TABLE_INT_STR_END_VALUE
 };
 
 //http://forum.sat-expert.com/antenny/2558-chto-takoe-h-v-i-l-r-ili-kak-resiver-pereklyuchaet-polyarizaciyu-i-ob-22kgc.html
 table_IntStr_t fe_pol_desc[] = {
-	{SEC_VOLTAGE_13,	"SEC_VOLTAGE_13"},
-	{SEC_VOLTAGE_18,	"SEC_VOLTAGE_18"},
-	{SEC_VOLTAGE_OFF,	"SEC_VOLTAGE_OFF"},
+	{SEC_VOLTAGE_13,   "SEC_VOLTAGE_13"},
+	{SEC_VOLTAGE_18,   "SEC_VOLTAGE_18"},
+	{SEC_VOLTAGE_OFF,  "SEC_VOLTAGE_OFF"},
 
-	{SEC_VOLTAGE_18,	"0"},
-	{SEC_VOLTAGE_18,	"h"},
-	{SEC_VOLTAGE_18,	"hor"},
-	{SEC_VOLTAGE_18,	"horizontal"},
-	{SEC_VOLTAGE_18,	"left"},
+	{SEC_VOLTAGE_18,   "0"},
+	{SEC_VOLTAGE_18,   "h"},
+	{SEC_VOLTAGE_18,   "hor"},
+	{SEC_VOLTAGE_18,   "horizontal"},
+	{SEC_VOLTAGE_18,   "left"},
 
-	{SEC_VOLTAGE_13,	"1"},
-	{SEC_VOLTAGE_13,	"v"},
-	{SEC_VOLTAGE_13,	"ver"},
-	{SEC_VOLTAGE_13,	"vertical"},
-	{SEC_VOLTAGE_18,	"right"},
+	{SEC_VOLTAGE_13,   "1"},
+	{SEC_VOLTAGE_13,   "v"},
+	{SEC_VOLTAGE_13,   "ver"},
+	{SEC_VOLTAGE_13,   "vertical"},
+	{SEC_VOLTAGE_18,   "right"},
 
-	{SEC_VOLTAGE_OFF,	"off"},
+	{SEC_VOLTAGE_OFF,  "off"},
 	TABLE_INT_STR_END_VALUE
 };
 
@@ -208,11 +208,11 @@ int32_t table_IntStrLookupR(const table_IntStr_t table[], char *value, int32_t d
 
 static int dvb_printFrontendInfo(int frontend_fd)
 {
-	int			err;
-	table_IntStr_t				*cur_desc = fe_caps_desc;
-	struct dvb_frontend_info	fe_info;
-	struct dtv_properties		dtv_prop;
-	struct dtv_property			dvb_prop[DTV_MAX_COMMAND];
+	int                      err;
+	table_IntStr_t          *cur_desc = fe_caps_desc;
+	struct dvb_frontend_info fe_info;
+	struct dtv_properties    dtv_prop;
+	struct dtv_property      dvb_prop[DTV_MAX_COMMAND];
 
 	dvb_prop[0].cmd = DTV_API_VERSION;
 
@@ -288,13 +288,13 @@ static void dvb_printLockInfo(int32_t fd_frontend, uint32_t *p_status)
 	ioctl(fd_frontend, FE_READ_UNCORRECTED_BLOCKS, &uncorrected_blocks);
 
 	printf("status=0x%02x: %s%s%s%s%s%s%s\n", status,
-					(status & FE_HAS_SIGNAL)?"FE_HAS_SIGNAL ":"",
-					(status & FE_HAS_CARRIER)?"FE_HAS_CARRIER ":"",
-					(status & FE_HAS_VITERBI)?"FE_HAS_VITERBI ":"",
-					(status & FE_HAS_SYNC)?"FE_HAS_SYNC ":"",
-					(status & FE_HAS_LOCK)?"FE_HAS_LOCK ":"",
-					(status & FE_TIMEDOUT)?"FE_TIMEDOUT ":"",
-					(status & FE_REINIT)?"FE_REINIT ":"");
+					(status & FE_HAS_SIGNAL)  ? "FE_HAS_SIGNAL "  : "",
+					(status & FE_HAS_CARRIER) ? "FE_HAS_CARRIER " : "",
+					(status & FE_HAS_VITERBI) ? "FE_HAS_VITERBI " : "",
+					(status & FE_HAS_SYNC)    ? "FE_HAS_SYNC "    : "",
+					(status & FE_HAS_LOCK)    ? "FE_HAS_LOCK "    : "",
+					(status & FE_TIMEDOUT)    ? "FE_TIMEDOUT "    : "",
+					(status & FE_REINIT)      ? "FE_REINIT "      : "");
 
 	printf("snr=%3d%%\tstr=%3d%%\tber=%7d\tuncorrected_blocks=%d\n", (int)snr*100/65535, (int)str*100/65535, ber, uncorrected_blocks);
 
@@ -434,45 +434,45 @@ static void version(void)
 
 int main(int argc, char **argv)
 {
-	struct dtv_property		dtv[16];//check if it enough
-	struct dtv_properties	cmdseq;
-	int32_t					fd_frontend;
-	int32_t					opt;
-	uint32_t				device = 0;
-	int32_t					show_tuner_info = 0;
-	int32_t					verbose = 0;
-	fe_delivery_system_t	delivery_system = SYS_DVBC_ANNEX_A;
-	uint32_t				frequency = 0;
-	uint32_t				symbol_rate = 6900000;//6,9MHz
-	fe_modulation_t			modulation = QAM_AUTO;
-	uint32_t				plp_id = 0;
-	int32_t					option_index = 0;
-	int32_t					inversion = INVERSION_AUTO;
-	int32_t					dont_close_fe = 1;
-	int32_t					wait_count = -1;
-	int32_t					has_lock = 0;
-	int32_t					polarization = SEC_VOLTAGE_13;//0 - horizontal, 1 - vertical
-	int32_t					propCount = 0;
-	int32_t					dyseqc_port = -1;
-	int32_t					read_only = 0;
-	static struct option	long_options[] = {
-		{"help",		no_argument,		0, 'h'},
-		{"version",		no_argument,		0, 'V'},
-		{"info",		no_argument,		0, 'i'},
-		{"verbose",		no_argument,		0, 'v'},
-		{"device",		required_argument,	0, 'd'},
-		{"del-sys",		required_argument,	0, 't'},
-		{"frequency",	required_argument,	0, 'f'},
-		{"symbol-rate",	required_argument,	0, 's'},
-		{"modulation",	required_argument,	0, 'm'},
-		{"plp-id",		required_argument,	0, 'p'},
-		{"inversion",	required_argument,	0, 'n'},
-		{"close-fe",	no_argument,		0, 'c'},
-		{"wait-count",	required_argument,	0, 'w'},
-		{"polarization",required_argument,	0, 'z'},
-		{"pol",			required_argument,	0, 'z'},
-		{"dyseqc",		required_argument,	0, 'q'},
-		{"read-only",		no_argument,	0, 'r'},
+	struct dtv_property    dtv[16];//check if it enough
+	struct dtv_properties  cmdseq;
+	int32_t                fd_frontend;
+	int32_t                opt;
+	uint32_t               device = 0;
+	int32_t                show_tuner_info = 0;
+	int32_t                verbose = 0;
+	fe_delivery_system_t   delivery_system = SYS_DVBC_ANNEX_A;
+	uint32_t               frequency = 0;
+	uint32_t               symbol_rate = 6900000;//6,9MHz
+	fe_modulation_t        modulation = QAM_AUTO;
+	uint32_t               plp_id = 0;
+	int32_t                option_index = 0;
+	int32_t                inversion = INVERSION_AUTO;
+	int32_t                dont_close_fe = 1;
+	int32_t                wait_count = -1;
+	int32_t                has_lock = 0;
+	int32_t                polarization = SEC_VOLTAGE_13;//0 - horizontal, 1 - vertical
+	int32_t                propCount = 0;
+	int32_t                dyseqc_port = -1;
+	int32_t                read_only = 0;
+	static struct option   long_options[] = {
+		{"help",          no_argument,        0, 'h'},
+		{"version",       no_argument,        0, 'V'},
+		{"info",          no_argument,        0, 'i'},
+		{"verbose",       no_argument,        0, 'v'},
+		{"device",        required_argument,  0, 'd'},
+		{"del-sys",       required_argument,  0, 't'},
+		{"frequency",     required_argument,  0, 'f'},
+		{"symbol-rate",   required_argument,  0, 's'},
+		{"modulation",    required_argument,  0, 'm'},
+		{"plp-id",        required_argument,  0, 'p'},
+		{"inversion",     required_argument,  0, 'n'},
+		{"close-fe",      no_argument,        0, 'c'},
+		{"wait-count",    required_argument,  0, 'w'},
+		{"polarization",  required_argument,  0, 'z'},
+		{"pol",           required_argument,  0, 'z'},
+		{"dyseqc",        required_argument,  0, 'q'},
+		{"read-only",     no_argument,        0, 'r'},
 		{0, 0, 0, 0},
 	};
 
