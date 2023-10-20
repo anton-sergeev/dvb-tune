@@ -69,6 +69,8 @@ typedef struct {
 /******************************************************************
 * STATIC DATA                                                     *
 *******************************************************************/
+const char *version_str = "1.0 (2014-11-11)";
+
 table_IntStr_t fe_typeNames[] = {
 	{FE_QPSK,	"DVB-S"},
 	{FE_QAM,	"DVB-C"},
@@ -390,6 +392,7 @@ static void usage(char *progname)
 
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("\t-h, --help                    - Print this message\n");
+	printf("\t-V, --version                 - Print version\n");
 	printf("\t-v, --verbose                 - Be verbose\n");
 	printf("\t-d, --device=DEVID            - Choose dvb device /dev/dvb<DEVID>.frontend0\n");
 	printf("\t-i, --info                    - Print tuner info\n");
@@ -421,6 +424,12 @@ static void usage(char *progname)
 	return;
 }
 
+static void version(void)
+{
+	printf("%s\n", version_str);
+	return;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -446,6 +455,7 @@ int main(int argc, char **argv)
 	int32_t					dyseqc_port = -1;
 	static struct option	long_options[] = {
 		{"help",		no_argument,		0, 'h'},
+		{"version",		no_argument,		0, 'V'},
 		{"info",		no_argument,		0, 'i'},
 		{"verbose",		no_argument,		0, 'v'},
 		{"device",		required_argument,	0, 'd'},
@@ -463,10 +473,14 @@ int main(int argc, char **argv)
 		{0, 0, 0, 0},
 	};
 
-	while((opt = getopt_long(argc, argv, "hivd:t:f:s:m:p:n:cw:z:q:", long_options, &option_index)) != -1) {
+	while((opt = getopt_long(argc, argv, "hVivd:t:f:s:m:p:n:cw:z:q:", long_options, &option_index)) != -1) {
 		switch(opt) {
 			case 'h':
 				usage(argv[0]);
+				return 0;
+				break;
+			case 'V':
+				version();
 				return 0;
 				break;
 			case 'i':
