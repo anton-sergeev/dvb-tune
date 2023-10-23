@@ -203,7 +203,7 @@ table_UintStr_t fe_tateFlags[] = {
 /******************************************************************
 * FUNCTION IMPLEMENTATION                     <Module>_<Word>+    *
 *******************************************************************/
-const char *table_UintStrLookup(const table_UintStr_t table[], uint32_t key, char *defaultValue)
+const char *table_UintStrLookup(const table_UintStr_t table[], uint32_t key, const char *defaultValue)
 {
 /*	if(key < 0) {
 		return defaultValue;
@@ -217,7 +217,7 @@ const char *table_UintStrLookup(const table_UintStr_t table[], uint32_t key, cha
 	return defaultValue;
 }
 
-int32_t table_UintStrLookupR(const table_UintStr_t table[], char *value, int32_t defaultValue)
+int32_t table_UintStrLookupR(const table_UintStr_t table[], const char *value, int32_t defaultValue)
 {
 	if(!value) {
 		return defaultValue;
