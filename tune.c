@@ -29,11 +29,13 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #define SET_DTV_PRPERTY(prop, id, _cmd, val) \
-		{ \
+		if(ARRAY_SIZE(prop) > (id + 1)) { \
 			prop[id].cmd = _cmd; \
 			prop[id].u.data = val; \
 			id++; \
-		}
+		} else { \
+			printf("%s(): can't set %s, too many properties\n", __func__, #_cmd); \
+		} \
 
 #define TABLE_UINT_END_VALUE      0xdeadbeaf
 #define TABLE_STR_END_VALUE       NULL
@@ -229,7 +231,7 @@ static int dvb_printFrontendInfo(int frontend_fd)
 	int                      err;
 	struct dvb_frontend_info fe_info;
 	struct dtv_properties    dtv_prop;
-	struct dtv_property      dvb_prop[DTV_MAX_COMMAND];
+	struct dtv_property      dvb_prop[DTV_IOCTL_MAX_MSGS];
 
 	dvb_prop[0].cmd = DTV_API_VERSION;
 
@@ -258,7 +260,7 @@ static int dvb_printFrontendInfo(int frontend_fd)
 	}
 	do {
 		err = ioctl(frontend_fd, FE_GET_INFO, &fe_info);
-		if (err < 0) {
+		if(err < 0) {
 			printf("%s(): ioctl FE_GET_INFO failed", __func__);
 		}
 	} while(err < 0);
@@ -450,8 +452,6 @@ static void version(void)
 
 int main(int argc, char **argv)
 {
-	struct dtv_property    dtv[16];//check if it enough
-	struct dtv_properties  cmdseq;
 	int32_t                fd_frontend;
 	int32_t                opt;
 	uint32_t               device = 0;
@@ -468,7 +468,6 @@ int main(int argc, char **argv)
 	int32_t                wait_count = -1;
 	int32_t                has_lock = 0;
 	int32_t                polarization = SEC_VOLTAGE_13;//0 - horizontal, 1 - vertical
-	int32_t                propCount = 0;
 	int32_t                dyseqc_port = -1;
 	int32_t                read_only = 0;
 	static struct option   long_options[] = {
@@ -563,17 +562,22 @@ int main(int argc, char **argv)
 	}
 
 	if(read_only == 0) {
+		struct dtv_property   dtv[DTV_IOCTL_MAX_MSGS];
+		struct dtv_properties cmdseq;
+		uint32_t              propCount = 0;
+
 		if(frequency == 0) {
 			printf("ERROR: Frequency not setted!\n");
 			usage(argv[0]);
 			return -5;
 		}
 
+		printf( "Selected delivery sistem: %s\n", get_delSys_name(delivery_system));
+		// TODO: check if we on DVB API v5 here.
 		dvb_setFrontendType(fd_frontend, delivery_system);
 		if(show_tuner_info) {
 			dvb_printFrontendInfo(fd_frontend);
 		}
-		printf( "Selected delivery sistem: %s\n", get_delSys_name(delivery_system));
 
 		if(delivery_system == SYS_DVBC_ANNEX_A) {//DVB-C
 			printf( "Tune frontend on:\n"
