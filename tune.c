@@ -35,9 +35,16 @@
 			id++; \
 		}
 
-#define TABLE_INT_END_VALUE     0xdeadbeaf
-#define TABLE_STR_END_VALUE     NULL
-#define TABLE_INT_STR_END_VALUE {TABLE_INT_END_VALUE, TABLE_STR_END_VALUE}
+#define TABLE_UINT_END_VALUE      0xdeadbeaf
+#define TABLE_STR_END_VALUE       NULL
+#define TABLE_UINT_STR_END_VALUE  {TABLE_UINT_END_VALUE, TABLE_STR_END_VALUE}
+#define TABLE_UINT_STR_VALUE(v)   {v, #v}
+
+#define table_for_each_entry(p_pos, table) \
+  for (const table_UintStr_t *p_pos = table; \
+     p_pos->value != TABLE_STR_END_VALUE; p_pos++)
+
+
 
 #define TUNER_C_BAND_START         3000000 /*kHZ*/
 #define TUNER_C_BAND_END           4200000 /*kHZ*/
@@ -76,88 +83,88 @@ table_UintStr_t fe_typeNames[] = {
 	{FE_QAM,  "DVB-C"},
 	{FE_OFDM, "DVB-T"},
 	{FE_ATSC, "ATSC"},
-	TABLE_INT_STR_END_VALUE
+	TABLE_UINT_STR_END_VALUE
 };
 
 table_UintStr_t delivery_system_desc[] = {
-	{SYS_UNDEFINED,    "SYS_UNDEFINED"},
-	{SYS_DVBC_ANNEX_A, "SYS_DVBC_ANNEX_A"},//DVB-C
-	{SYS_DVBC_ANNEX_B, "SYS_DVBC_ANNEX_B"},
-	{SYS_DVBT,         "SYS_DVBT"},
-	{SYS_DSS,          "SYS_DSS"},
-	{SYS_DVBS,         "SYS_DVBS"},
-	{SYS_DVBS2,        "SYS_DVBS2"},
-	{SYS_DVBH,         "SYS_DVBH"},
-	{SYS_ISDBT,        "SYS_ISDBT"},
-	{SYS_ISDBS,        "SYS_ISDBS"},
-	{SYS_ISDBC,        "SYS_ISDBC"},
-	{SYS_ATSC,         "SYS_ATSC"},
-	{SYS_ATSCMH,       "SYS_ATSCMH"},
-	{SYS_DMBTH,        "SYS_DMBTH"},
-	{SYS_CMMB,         "SYS_CMMB"},
-	{SYS_DAB,          "SYS_DAB"},
-	{SYS_DVBT2,        "SYS_DVBT2"},
-	{SYS_TURBO,        "SYS_TURBO"},
-	{SYS_DVBC_ANNEX_C, "SYS_DVBC_ANNEX_C"},
-	TABLE_INT_STR_END_VALUE
+	TABLE_UINT_STR_VALUE(SYS_UNDEFINED),
+	TABLE_UINT_STR_VALUE(SYS_DVBC_ANNEX_A), //DVB-C
+	TABLE_UINT_STR_VALUE(SYS_DVBC_ANNEX_B),
+	TABLE_UINT_STR_VALUE(SYS_DVBT),
+	TABLE_UINT_STR_VALUE(SYS_DSS),
+	TABLE_UINT_STR_VALUE(SYS_DVBS),
+	TABLE_UINT_STR_VALUE(SYS_DVBS2),
+	TABLE_UINT_STR_VALUE(SYS_DVBH),
+	TABLE_UINT_STR_VALUE(SYS_ISDBT),
+	TABLE_UINT_STR_VALUE(SYS_ISDBS),
+	TABLE_UINT_STR_VALUE(SYS_ISDBC),
+	TABLE_UINT_STR_VALUE(SYS_ATSC),
+	TABLE_UINT_STR_VALUE(SYS_ATSCMH),
+	TABLE_UINT_STR_VALUE(SYS_DMBTH),
+	TABLE_UINT_STR_VALUE(SYS_CMMB),
+	TABLE_UINT_STR_VALUE(SYS_DAB),
+	TABLE_UINT_STR_VALUE(SYS_DVBT2),
+	TABLE_UINT_STR_VALUE(SYS_TURBO),
+	TABLE_UINT_STR_VALUE(SYS_DVBC_ANNEX_C),
+	TABLE_UINT_STR_END_VALUE
 };
 
 table_UintStr_t fe_caps_desc[] = {
-	{FE_IS_STUPID,                   "FE_IS_STUPID"},
-	{FE_CAN_INVERSION_AUTO,          "FE_CAN_INVERSION_AUTO"},
-	{FE_CAN_FEC_1_2,                 "FE_CAN_FEC_1_2"},
-	{FE_CAN_FEC_2_3,                 "FE_CAN_FEC_2_3"},
-	{FE_CAN_FEC_3_4,                 "FE_CAN_FEC_3_4"},
-	{FE_CAN_FEC_4_5,                 "FE_CAN_FEC_4_5"},
-	{FE_CAN_FEC_5_6,                 "FE_CAN_FEC_5_6"},
-	{FE_CAN_FEC_6_7,                 "FE_CAN_FEC_6_7"},
-	{FE_CAN_FEC_7_8,                 "FE_CAN_FEC_7_8"},
-	{FE_CAN_FEC_8_9,                 "FE_CAN_FEC_8_9"},
-	{FE_CAN_FEC_AUTO,                "FE_CAN_FEC_AUTO"},
-	{FE_CAN_QPSK,                    "FE_CAN_QPSK"},
-	{FE_CAN_QAM_16,                  "FE_CAN_QAM_16"},
-	{FE_CAN_QAM_32,                  "FE_CAN_QAM_32"},
-	{FE_CAN_QAM_64,                  "FE_CAN_QAM_64"},
-	{FE_CAN_QAM_128,                 "FE_CAN_QAM_128"},
-	{FE_CAN_QAM_256,                 "FE_CAN_QAM_256"},
-	{FE_CAN_QAM_AUTO,                "FE_CAN_QAM_AUTO"},
-	{FE_CAN_TRANSMISSION_MODE_AUTO,  "FE_CAN_TRANSMISSION_MODE_AUTO"},
-	{FE_CAN_BANDWIDTH_AUTO,          "FE_CAN_BANDWIDTH_AUTO"},
-	{FE_CAN_GUARD_INTERVAL_AUTO,     "FE_CAN_GUARD_INTERVAL_AUTO"},
-	{FE_CAN_HIERARCHY_AUTO,          "FE_CAN_HIERARCHY_AUTO"},
-	{FE_CAN_8VSB,                    "FE_CAN_8VSB"},
-	{FE_CAN_16VSB,                   "FE_CAN_16VSB"},
-	{FE_HAS_EXTENDED_CAPS,           "FE_HAS_EXTENDED_CAPS"},
-	{FE_CAN_2G_MODULATION,           "FE_CAN_2G_MODULATION"},
-	{FE_NEEDS_BENDING,               "FE_NEEDS_BENDING"},
-	{FE_CAN_RECOVER,                 "FE_CAN_RECOVER"},
-	{FE_CAN_MUTE_TS,                 "FE_CAN_MUTE_TS"},
-	TABLE_INT_STR_END_VALUE
+	TABLE_UINT_STR_VALUE(FE_IS_STUPID),
+	TABLE_UINT_STR_VALUE(FE_CAN_INVERSION_AUTO),
+	TABLE_UINT_STR_VALUE(FE_CAN_FEC_1_2),
+	TABLE_UINT_STR_VALUE(FE_CAN_FEC_2_3),
+	TABLE_UINT_STR_VALUE(FE_CAN_FEC_3_4),
+	TABLE_UINT_STR_VALUE(FE_CAN_FEC_4_5),
+	TABLE_UINT_STR_VALUE(FE_CAN_FEC_5_6),
+	TABLE_UINT_STR_VALUE(FE_CAN_FEC_6_7),
+	TABLE_UINT_STR_VALUE(FE_CAN_FEC_7_8),
+	TABLE_UINT_STR_VALUE(FE_CAN_FEC_8_9),
+	TABLE_UINT_STR_VALUE(FE_CAN_FEC_AUTO),
+	TABLE_UINT_STR_VALUE(FE_CAN_QPSK),
+	TABLE_UINT_STR_VALUE(FE_CAN_QAM_16),
+	TABLE_UINT_STR_VALUE(FE_CAN_QAM_32),
+	TABLE_UINT_STR_VALUE(FE_CAN_QAM_64),
+	TABLE_UINT_STR_VALUE(FE_CAN_QAM_128),
+	TABLE_UINT_STR_VALUE(FE_CAN_QAM_256),
+	TABLE_UINT_STR_VALUE(FE_CAN_QAM_AUTO),
+	TABLE_UINT_STR_VALUE(FE_CAN_TRANSMISSION_MODE_AUTO),
+	TABLE_UINT_STR_VALUE(FE_CAN_BANDWIDTH_AUTO),
+	TABLE_UINT_STR_VALUE(FE_CAN_GUARD_INTERVAL_AUTO),
+	TABLE_UINT_STR_VALUE(FE_CAN_HIERARCHY_AUTO),
+	TABLE_UINT_STR_VALUE(FE_CAN_8VSB),
+	TABLE_UINT_STR_VALUE(FE_CAN_16VSB),
+	TABLE_UINT_STR_VALUE(FE_HAS_EXTENDED_CAPS),
+	TABLE_UINT_STR_VALUE(FE_CAN_2G_MODULATION),
+	TABLE_UINT_STR_VALUE(FE_NEEDS_BENDING),
+	TABLE_UINT_STR_VALUE(FE_CAN_RECOVER),
+	TABLE_UINT_STR_VALUE(FE_CAN_MUTE_TS),
+	TABLE_UINT_STR_END_VALUE
 };
 
 table_UintStr_t fe_mod_desc[] = {
-	{QPSK,     "QPSK"},
-	{QAM_16,   "QAM_16"},
-	{QAM_32,   "QAM_32"},
-	{QAM_64,   "QAM_64"},
-	{QAM_128,  "QAM_128"},
-	{QAM_256,  "QAM_256"},
-	{QAM_AUTO, "QAM_AUTO"},
-	{VSB_8,    "VSB_8"},
-	{VSB_16,   "VSB_16"},
-	{PSK_8,    "PSK_8"},
-	{APSK_16,  "APSK_16"},
-	{APSK_32,  "APSK_32"},
-	{DQPSK,    "DQPSK"},
-	{QAM_4_NR, "QAM_4_NR"},
-	TABLE_INT_STR_END_VALUE
+	TABLE_UINT_STR_VALUE(QPSK),
+	TABLE_UINT_STR_VALUE(QAM_16),
+	TABLE_UINT_STR_VALUE(QAM_32),
+	TABLE_UINT_STR_VALUE(QAM_64),
+	TABLE_UINT_STR_VALUE(QAM_128),
+	TABLE_UINT_STR_VALUE(QAM_256),
+	TABLE_UINT_STR_VALUE(QAM_AUTO),
+	TABLE_UINT_STR_VALUE(VSB_8),
+	TABLE_UINT_STR_VALUE(VSB_16),
+	TABLE_UINT_STR_VALUE(PSK_8),
+	TABLE_UINT_STR_VALUE(APSK_16),
+	TABLE_UINT_STR_VALUE(APSK_32),
+	TABLE_UINT_STR_VALUE(DQPSK),
+	TABLE_UINT_STR_VALUE(QAM_4_NR),
+	TABLE_UINT_STR_END_VALUE
 };
 
 //http://forum.sat-expert.com/antenny/2558-chto-takoe-h-v-i-l-r-ili-kak-resiver-pereklyuchaet-polyarizaciyu-i-ob-22kgc.html
 table_UintStr_t fe_pol_desc[] = {
-	{SEC_VOLTAGE_13,   "SEC_VOLTAGE_13"},
-	{SEC_VOLTAGE_18,   "SEC_VOLTAGE_18"},
-	{SEC_VOLTAGE_OFF,  "SEC_VOLTAGE_OFF"},
+	TABLE_UINT_STR_VALUE(SEC_VOLTAGE_13),
+	TABLE_UINT_STR_VALUE(SEC_VOLTAGE_18),
+	TABLE_UINT_STR_VALUE(SEC_VOLTAGE_OFF),
 
 	{SEC_VOLTAGE_18,   "0"},
 	{SEC_VOLTAGE_18,   "h"},
@@ -172,7 +179,7 @@ table_UintStr_t fe_pol_desc[] = {
 	{SEC_VOLTAGE_18,   "right"},
 
 	{SEC_VOLTAGE_OFF,  "off"},
-	TABLE_INT_STR_END_VALUE
+	TABLE_UINT_STR_END_VALUE
 };
 
 /******************************************************************
@@ -180,13 +187,13 @@ table_UintStr_t fe_pol_desc[] = {
 *******************************************************************/
 const char *table_UintStrLookup(const table_UintStr_t table[], uint32_t key, char *defaultValue)
 {
-	int32_t i;
 /*	if(key < 0) {
 		return defaultValue;
 	}*/
-	for(i = 0; table[i].value != TABLE_STR_END_VALUE; i++) {
-		if(table[i].key == key) {
-			return table[i].value;
+
+	table_for_each_entry(p_item, table) {
+		if(p_item->key == key) {
+			return p_item->value;
 		}
 	}
 	return defaultValue;
@@ -194,13 +201,12 @@ const char *table_UintStrLookup(const table_UintStr_t table[], uint32_t key, cha
 
 int32_t table_UintStrLookupR(const table_UintStr_t table[], char *value, int32_t defaultValue)
 {
-	int32_t i;
 	if(!value) {
 		return defaultValue;
 	}
-	for(i = 0; table[i].value != TABLE_STR_END_VALUE; i++) {
-		if(!strcasecmp(table[i].value, value)) {
-			return table[i].key;
+	table_for_each_entry(p_item, table) {
+		if(!strcasecmp(p_item->value, value)) {
+			return p_item->key;
 		}
 	}
 	return defaultValue;
@@ -209,7 +215,6 @@ int32_t table_UintStrLookupR(const table_UintStr_t table[], char *value, int32_t
 static int dvb_printFrontendInfo(int frontend_fd)
 {
 	int                      err;
-	table_UintStr_t          *cur_desc = fe_caps_desc;
 	struct dvb_frontend_info fe_info;
 	struct dtv_properties    dtv_prop;
 	struct dtv_property      dvb_prop[DTV_MAX_COMMAND];
@@ -255,11 +260,10 @@ static int dvb_printFrontendInfo(int frontend_fd)
 			fe_info.symbol_rate_min, fe_info.symbol_rate_max);
 	printf("\tCapabilities:\n");
 
-	while(cur_desc->value != TABLE_STR_END_VALUE) {
+	table_for_each_entry(cur_desc, fe_caps_desc) {
 		if(cur_desc->key & fe_info.caps) {
 			printf("\t\t%s\n", cur_desc->value);
 		}
-		cur_desc++;
 	}
 	return 0;
 }
@@ -388,7 +392,6 @@ int dvb_diseqcSetup(int frontend_fd, uint32_t frequency, diseqcSwitchType_t type
 
 static void usage(char *progname)
 {
-	table_UintStr_t *table_IntStr_ptr;
 
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("\t-h, --help                    - Print this message\n");
@@ -398,10 +401,8 @@ static void usage(char *progname)
 	printf("\t-i, --info                    - Print tuner info\n");
 	printf("\t-t, --del-sys=<");
 
-	table_IntStr_ptr = delivery_system_desc;
-	while(table_IntStr_ptr->value != TABLE_STR_END_VALUE) {
-		printf("%s%s", (table_IntStr_ptr == delivery_system_desc) ? "" : "|", table_IntStr_ptr->value);
-		table_IntStr_ptr++;
+	table_for_each_entry(p_item, delivery_system_desc) {
+		printf("%s%s", (p_item == delivery_system_desc) ? "" : "|", p_item->value);
 	}
 	printf("> - Select delivery type\n");
 
@@ -410,10 +411,8 @@ static void usage(char *progname)
 	printf("\t-p, --plp-id=PLPID            - Set plp id (for DVB-T2)\n");
 
 	printf("\t-m, --modulation=<");
-	table_IntStr_ptr = fe_mod_desc;
-	while(table_IntStr_ptr->value != TABLE_STR_END_VALUE) {
-		printf("%s%s", (table_IntStr_ptr == fe_mod_desc) ? "" : "|", table_IntStr_ptr->value);
-		table_IntStr_ptr++;
+	table_for_each_entry(p_item, fe_mod_desc) {
+		printf("%s%s", (p_item == fe_mod_desc) ? "" : "|", p_item->value);
 	}
 	printf("> - Set modulation\n");
 	printf("\t-c, --close-fe                - Close frontend at the end (infinity wait is default)\n");
