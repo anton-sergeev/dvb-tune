@@ -29,14 +29,17 @@
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
-#define SET_DTV_PRPERTY(prop, id, _cmd, val) \
+#define SET_DTV_PRPERTY_1(prop, id, _cmd, val) \
 		if(ARRAY_SIZE(prop) > (id + 1)) { \
 			prop[id].cmd = _cmd; \
 			prop[id].u.data = val; \
 			id++; \
 		} else { \
 			printf("%s(): can't set %s, too many properties\n", __func__, #_cmd); \
-		} \
+		}
+#define SET_DTV_PRPERTY SET_DTV_PRPERTY_1
+#define SET_DTV_PRPERTY_0(prop, id, _cmd) SET_DTV_PRPERTY_1(prop, id, _cmd, 0)
+
 
 #define TABLE_UINT_END_VALUE      0xdeadbeaf
 #define TABLE_STR_END_VALUE       NULL
@@ -227,35 +230,58 @@ int32_t table_UintStrLookupR(const table_UintStr_t table[], char *value, int32_t
 	return defaultValue;
 }
 
+
+static int dvb_isDelSysSatellite(fe_delivery_system_t delSys)
+{
+	return ((delSys == SYS_DVBS) || (delSys == SYS_DVBS2) ||
+		(delSys == SYS_TURBO) || (delSys == SYS_ISDBS) || (delSys == SYS_DSS));
+}
+
 static int dvb_printFrontendInfo(int frontend_fd)
 {
-	int                      err;
-	struct dvb_frontend_info fe_info;
-	struct dtv_properties    dtv_prop;
-	struct dtv_property      dvb_prop[DTV_IOCTL_MAX_MSGS];
+	int                       err;
+	struct dvb_frontend_info  fe_info;
+	struct dtv_properties     cmds;
+	struct dtv_property       dvb_prop[DTV_IOCTL_MAX_MSGS];
+	uint32_t                  propCount = 0;
+	fe_delivery_system_t      curDelSys = SYS_UNDEFINED;
 
-	dvb_prop[0].cmd = DTV_API_VERSION;
-
-	dtv_prop.num = 1;
-	dtv_prop.props = dvb_prop;
-	if(ioctl(frontend_fd, FE_GET_PROPERTY, &dtv_prop) == -1) {
+	SET_DTV_PRPERTY_0(dvb_prop, propCount, DTV_API_VERSION);
+	cmds.num = propCount;
+	cmds.props = dvb_prop;
+	if(ioctl(frontend_fd, FE_GET_PROPERTY, &cmds) == -1) {
 		printf("DVB API v3\n");
 	} else {
 		printf("DVB API v%d.%d\n", dvb_prop[0].u.data >> 8, dvb_prop[0].u.data & 0xff);
 		if(dvb_prop[0].u.data >= 0x505) {
-			dvb_prop[0].cmd = DTV_ENUM_DELSYS;
-			dtv_prop.num = 1;
-			dtv_prop.props = dvb_prop;
-			if(ioctl(frontend_fd, FE_GET_PROPERTY, &dtv_prop) != -1) {
-				if(dvb_prop[0].u.buffer.len > 0) {
-					uint32_t i;
-					printf("Tuner support the following delivery systems: ");
-					for(i = 0; i < dvb_prop[0].u.buffer.len; i++) {
-						fe_delivery_system_t delSys = dvb_prop[0].u.buffer.data[i];
-						printf("%s ", get_delSys_name(delSys));
+			propCount = 0;
+			SET_DTV_PRPERTY_0(dvb_prop, propCount, DTV_ENUM_DELSYS);
+			SET_DTV_PRPERTY_0(dvb_prop, propCount, DTV_DELIVERY_SYSTEM);
+			cmds.num = propCount;
+			cmds.props = dvb_prop;
+			if(ioctl(frontend_fd, FE_GET_PROPERTY, &cmds) != -1) {
+				for(uint32_t i = 0; i < cmds.num; i++) {
+					switch(dvb_prop[i].cmd) {
+					case DTV_ENUM_DELSYS:
+						if(dvb_prop[i].u.buffer.len > 0) {
+							printf("Tuner support the following delivery systems: ");
+							for(uint32_t j = 0; j < dvb_prop[i].u.buffer.len; j++) {
+								fe_delivery_system_t delSys = dvb_prop[i].u.buffer.data[j];
+								printf("%s ", get_delSys_name(delSys));
+							}
+							printf("\n");
+						}
+						break;
+					case DTV_DELIVERY_SYSTEM:
+						curDelSys = dvb_prop[i].u.data;
+						break;
+					default:
+						printf("%s(): warn, unexpected command: %d\n", __func__, dvb_prop[i].cmd);
+						break;
 					}
-					printf("\n");
 				}
+			} else {
+				printf("%s(): querying delivery system failed: %s\n", __func__, strerror(errno));
 			}
 		}
 	}
@@ -266,13 +292,13 @@ static int dvb_printFrontendInfo(int frontend_fd)
 		}
 	} while(err < 0);
 
-	bool is_sat = (fe_info.type == FE_QPSK);
+	bool is_sat = dvb_isDelSysSatellite(curDelSys);
 	printf( "Tuner info:\n"
 			"\tDVB Model=%s\n"
 			"\tType=%s\n"
 			"\tfrequency range: %5.1f..%5.1f %s, stepsize: %5.1f %s\n"
 			"\tsymbol rate range: %5.2f..%5.2f Msps\n",
-			fe_info.name, get_feType_name(fe_info.type),
+			fe_info.name, get_delSys_name(curDelSys), //get_feType_name(fe_info.type),
 			(float)fe_info.frequency_min / 1000000.0,
 			(float)fe_info.frequency_max / 1000000.0, is_sat ? "GHz" : "MHz",
 			(float)fe_info.frequency_stepsize / 1000.0, is_sat ? "MHz" : "kHz", // TODO: need to check
