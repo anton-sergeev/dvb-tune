@@ -83,7 +83,7 @@ typedef struct {
 /******************************************************************
 * STATIC DATA                                                     *
 *******************************************************************/
-const char *version_str = "1.0 (2014-11-11)";
+const char *version_str = "1.1 (2023-10-23)";
 
 table_UintStr_t fe_typeNames[] = {
 	{FE_QPSK, "DVB-S"},
