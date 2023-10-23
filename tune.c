@@ -350,7 +350,83 @@ static void dvb_printLockInfo(int32_t fd_frontend, uint32_t *p_status)
 	}
 	puts("");
 
-	printf("snr=%3d%%\tstr=%3d%%\tber=%7d\tuncorrected_blocks=%d\n", (int)snr*100/65535, (int)str*100/65535, ber, uncorrected_blocks);
+	printf("v3 stat: str=%6.2f%%, snr=%6.2f%%, ber=%7d, uncorrected_blocks=%d\n",
+		(float)str / 655.35, (float)snr / 655.35, ber, uncorrected_blocks);
+
+	{
+		// Check if DVB version is minimum 5.10.
+		// * https://linuxtv.org/docs/libdvbv5/index.html#dvbv5_stats ;
+		// * https://www.linuxtv.org/downloads/v4l-dvb-apis-old/frontend-properties.html#frontend-stat-properties
+		struct dtv_properties    cmds;
+		struct dtv_property      props[DTV_IOCTL_MAX_MSGS];
+		uint32_t propCount = 0;
+		
+		table_UintStr_t fe_stats[] = {
+			{DTV_STAT_SIGNAL_STRENGTH,      "signal strength"},
+			{DTV_STAT_CNR,                  "carrier SNR"},
+			{DTV_STAT_PRE_ERROR_BIT_COUNT,  "pre bit errors"},
+			{DTV_STAT_PRE_TOTAL_BIT_COUNT,  "pre bits total"},
+			{DTV_STAT_POST_ERROR_BIT_COUNT, "post bit errors"},
+			{DTV_STAT_POST_TOTAL_BIT_COUNT, "post bits total"},
+			{DTV_STAT_ERROR_BLOCK_COUNT,    "block errors"},
+			{DTV_STAT_TOTAL_BLOCK_COUNT,    "blocks total"},
+			TABLE_UINT_STR_END_VALUE
+		};
+		
+		table_for_each_entry(p_pos, fe_stats) { // for(uint32_t i = 0; i < ARRAY_SIZE(stats); i++) {
+			SET_DTV_PRPERTY_0(props, propCount, p_pos->key);
+		}
+		cmds.num = propCount;
+		cmds.props = props;
+		if(ioctl(fd_frontend, FE_GET_PROPERTY, &cmds) == 0) {
+			printf("v5 stat: ");
+			for(uint32_t i = 0; i < cmds.num; i++) {
+				switch(props[i].cmd) {
+					case DTV_STAT_SIGNAL_STRENGTH:
+					case DTV_STAT_CNR:
+					case DTV_STAT_PRE_ERROR_BIT_COUNT:
+					case DTV_STAT_PRE_TOTAL_BIT_COUNT:
+					case DTV_STAT_POST_ERROR_BIT_COUNT:
+					case DTV_STAT_POST_TOTAL_BIT_COUNT:
+					case DTV_STAT_ERROR_BLOCK_COUNT:
+					case DTV_STAT_TOTAL_BLOCK_COUNT:
+						if(props[i].u.st.len > 0) {
+							const char *stat_name = table_UintStrLookup(fe_stats, props[i].cmd, "unknown");
+							printf("%s: ", stat_name);
+							for(uint32_t j = 0; j < props[i].u.st.len; j++) {
+								struct dtv_stats _st = props[i].u.st.stat[j];
+								printf("%s", (j > 0) ? "|" : "");
+								switch(_st.scale) {
+								case FE_SCALE_NOT_AVAILABLE:
+									printf("not available");
+									break;
+								case FE_SCALE_DECIBEL:
+									printf("%7.3fdB", (float)_st.svalue / 1000.0);
+									break;
+								case FE_SCALE_RELATIVE:
+									printf("%6.2f%%", (float)_st.uvalue / 655.35);
+									break;
+								case FE_SCALE_COUNTER:
+									printf("%llu", _st.uvalue);
+									break;
+								default:
+									printf("unknown scale %d", _st.scale);
+									break;
+								}
+							}
+							printf(", ");
+						}
+						break;
+					default:
+						printf("%s(): warn, unexpected command: %d\n", __func__, props[i].cmd);
+						break;
+				}
+			}
+			puts("");
+		} else {
+			printf("%s(): failed getting V5 statistics: %s\n", __func__, strerror(errno));
+		}
+	}
 
 }
 
