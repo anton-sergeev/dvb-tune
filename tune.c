@@ -259,7 +259,7 @@ static int dvb_printFrontendInfo(int frontend_fd)
 	do {
 		err = ioctl(frontend_fd, FE_GET_INFO, &fe_info);
 		if (err < 0) {
-			printf("%s: ioctl FE_GET_INFO failed", __func__);
+			printf("%s(): ioctl FE_GET_INFO failed", __func__);
 		}
 	} while(err < 0);
 	printf( "Tuner info:\n"
@@ -330,7 +330,7 @@ int dvb_setFrontendType(int32_t fd_frontend, fe_delivery_system_t type)
 	p.u.data = type;
 
 	if (ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
-		printf("%s: set property failed: %s\n", __func__, strerror(errno));
+		printf("%s(): set property failed: %s\n", __func__, strerror(errno));
 		return -1;
 	}
 
@@ -348,9 +348,8 @@ int32_t dvb_openFronend(uint32_t adap, uint32_t fe, int32_t *fd, int32_t read_on
 	for(i = 0; i < ARRAY_SIZE(pathTemplate); i++) {
 		char buf[CMD_BUF_SIZE];
 		snprintf(buf, sizeof(buf), pathTemplate[i], adap, fe);
-		printf("Try to open %s ... ", buf);
 		if((*fd = open(buf, read_only ? O_RDONLY : O_RDWR)) >= 0) {
-			printf("success\n");
+			printf("Opened %s\n", buf);
 			return 0;
 		}
 		printf("fail\n");
@@ -365,7 +364,7 @@ int dvb_diseqcSend(int frontend_fd, const uint8_t* tx, size_t tx_len)
 	struct dvb_diseqc_master_cmd cmd;
 	size_t i;
 
-	printf("%s: sending %zu:\n", __func__, tx_len);
+	printf("%s(): sending %zu:\n", __func__, tx_len);
 	for(i = 0; i < tx_len; i++) {
 		printf(" 0x%02x", tx[i]);
 	}
@@ -559,7 +558,7 @@ int main(int argc, char **argv)
 	}
 
 	if(dvb_openFronend(device, 0, &fd_frontend, read_only) != 0) {
-		printf("%s[%d]: Error open device=%d frontend\n", __FILE__, __LINE__, device);
+		printf("%s()[%d]: Error open device=%d frontend\n", __func__, __LINE__, device);
 		return -1;
 	}
 
@@ -685,7 +684,7 @@ int main(int argc, char **argv)
 
 		if(status & FE_HAS_LOCK) {
 			has_lock = 1;
-			printf("%s[%d]: Locked success!!!\n", __FILE__, __LINE__);
+			printf("%s()[%d]: Locked success!!!\n", __func__, __LINE__);
 			break;
 		} else {
 			sleep(1);
