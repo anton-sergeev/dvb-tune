@@ -628,7 +628,7 @@ int main(int argc, char **argv)
 			SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);//INVERSION_ON
 			SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);//VSB_8
 
-		} else if((delivery_system == SYS_DVBS) || (delivery_system == SYS_DVBS2)) {//DVB-C
+		} else if((delivery_system == SYS_DVBS) || (delivery_system == SYS_DVBS2)) {//DVB-S/S2
 			uint32_t freqLO;
 			uint32_t tone = SEC_TONE_OFF;
 
@@ -666,6 +666,38 @@ int main(int argc, char **argv)
 			SET_DTV_PRPERTY(dtv, propCount, DTV_SYMBOL_RATE, symbol_rate);
 			SET_DTV_PRPERTY(dtv, propCount, DTV_VOLTAGE, polarization);
 			SET_DTV_PRPERTY(dtv, propCount, DTV_TONE, tone);
+
+		} else if(delivery_system == SYS_ISDBT) { // ISDB-T
+			printf( "Tune frontend on:\n"
+					"\tfreq        = %9d Hz\n",
+					frequency);
+
+			SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);
+			SET_DTV_PRPERTY(dtv, propCount, DTV_BANDWIDTH_HZ, 6000000);//BANDWIDTH_AUTO
+			SET_DTV_PRPERTY(dtv, propCount, DTV_TRANSMISSION_MODE, TRANSMISSION_MODE_AUTO);//TRANSMISSION_MODE_8K
+			SET_DTV_PRPERTY(dtv, propCount, DTV_GUARD_INTERVAL, GUARD_INTERVAL_AUTO);//GUARD_INTERVAL_1_16
+
+			/*
+			DTV_ISDBT_LAYER_ENABLED
+			DTV_ISDBT_PARTIAL_RECEPTION
+			DTV_ISDBT_SOUND_BROADCASTING
+			DTV_ISDBT_SB_SUBCHANNEL_ID
+			DTV_ISDBT_SB_SEGMENT_IDX
+			DTV_ISDBT_SB_SEGMENT_COUNT
+			DTV_ISDBT_LAYERA_FEC
+			DTV_ISDBT_LAYERA_MODULATION
+			DTV_ISDBT_LAYERA_SEGMENT_COUNT
+			DTV_ISDBT_LAYERA_TIME_INTERLEAVING
+			DTV_ISDBT_LAYERB_FEC
+			DTV_ISDBT_LAYERB_MODULATION
+			DTV_ISDBT_LAYERB_SEGMENT_COUNT
+			DTV_ISDBT_LAYERB_TIME_INTERLEAVING
+			DTV_ISDBT_LAYERC_FEC
+			DTV_ISDBT_LAYERC_MODULATION
+			DTV_ISDBT_LAYERC_SEGMENT_COUNT
+			DTV_ISDBT_LAYERC_TIME_INTERLEAVING
+			*/
 
 		} else {
 			printf("Not supported delivery system: %s\n", get_delSys_name(delivery_system));
