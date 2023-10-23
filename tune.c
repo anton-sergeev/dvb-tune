@@ -5,6 +5,7 @@
 *******************************************************************/
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdlib.h> //atoi
 #include <fcntl.h> //open
 #include <sys/ioctl.h>
@@ -248,7 +249,7 @@ static int dvb_printFrontendInfo(int frontend_fd)
 			if(ioctl(frontend_fd, FE_GET_PROPERTY, &dtv_prop) != -1) {
 				if(dvb_prop[0].u.buffer.len > 0) {
 					uint32_t i;
-					printf("Supported delivery systems: ");
+					printf("Tuner support the following delivery systems: ");
 					for(i = 0; i < dvb_prop[0].u.buffer.len; i++) {
 						fe_delivery_system_t delSys = dvb_prop[0].u.buffer.data[i];
 						printf("%s ", get_delSys_name(delSys));
@@ -264,14 +265,19 @@ static int dvb_printFrontendInfo(int frontend_fd)
 			printf("%s(): ioctl FE_GET_INFO failed", __func__);
 		}
 	} while(err < 0);
+
+	bool is_sat = (fe_info.type == FE_QPSK);
 	printf( "Tuner info:\n"
 			"\tDVB Model=%s\n"
 			"\tType=%s\n"
-			"\tfrequency_min  =%9u Hz, frequency_max  =%9u Hz, frequency_stepsize=%9u Hz\n"
-			"\tsymbol_rate_min=%9u Hz, symbol_rate_max=%9u Hz\n",
+			"\tfrequency range: %5.1f..%5.1f %s, stepsize: %5.1f %s\n"
+			"\tsymbol rate range: %5.2f..%5.2f Msps\n",
 			fe_info.name, get_feType_name(fe_info.type),
-			fe_info.frequency_min, fe_info.frequency_max, fe_info.frequency_stepsize,
-			fe_info.symbol_rate_min, fe_info.symbol_rate_max);
+			(float)fe_info.frequency_min / 1000000.0,
+			(float)fe_info.frequency_max / 1000000.0, is_sat ? "GHz" : "MHz",
+			(float)fe_info.frequency_stepsize / 1000.0, is_sat ? "MHz" : "kHz", // TODO: need to check
+			(float)fe_info.symbol_rate_min / 1000000.0,
+			(float)fe_info.symbol_rate_max / 1000000.0);
 	printf("\tCapabilities:\n");
 
 	table_for_each_entry(cur_desc, fe_caps_desc) {
