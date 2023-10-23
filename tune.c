@@ -410,6 +410,8 @@ static void usage(char *progname)
 {
 
 	printf("Usage: %s [OPTIONS]\n", progname);
+	printf("Setup or read status of Linux DVB API v5 tuner frontends.\n\n");
+	printf("Options:\n");
 	printf("\t-h, --help                    - Print this message\n");
 	printf("\t-V, --version                 - Print version\n");
 	printf("\t-v, --verbose                 - Be verbose\n");
