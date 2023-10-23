@@ -611,6 +611,7 @@ int main(int argc, char **argv)
 			dvb_printFrontendInfo(fd_frontend);
 		}
 
+		SET_DTV_PRPERTY_0(dtv, propCount, DTV_CLEAR);
 		if(delivery_system == SYS_DVBC_ANNEX_A) {//DVB-C
 			printf( "Tune frontend on:\n"
 					"\tfreq        = %9d Hz\n"
@@ -729,8 +730,7 @@ int main(int argc, char **argv)
 			printf("Not supported delivery system: %s\n", get_delSys_name(delivery_system));
 			return -2;
 		}
-		dtv[propCount].cmd = DTV_TUNE;
-		propCount++;
+		SET_DTV_PRPERTY_0(dtv, propCount, DTV_TUNE);
 		cmdseq.num = propCount;
 		cmdseq.props = dtv;
 
