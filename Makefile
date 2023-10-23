@@ -1,8 +1,12 @@
 
+BUILD_DIR ?= cmake_build/x86_64
 
-include makefile.begin.mk
+all: build
 
-PROGRAM_NAME := dvb-tune
-C_SOURCES := $(wildcard *.c)
 
-include makefile.end.mk
+build: "$(BUILD_DIR)"
+	cmake --build "$(BUILD_DIR)"
+
+"$(BUILD_DIR)" :
+	cmake -S . -B "$(BUILD_DIR)"
+

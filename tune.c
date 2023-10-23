@@ -12,6 +12,7 @@
 #include <unistd.h> //sleep, close
 #include <getopt.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 //linux
 //#include <linux/dvb/frontend.h>
@@ -361,6 +362,7 @@ static void dvb_printLockInfo(int32_t fd_frontend, uint32_t *p_status)
 	printf("v3 stat: str=%6.2f%%, snr=%6.2f%%, ber=%7d, uncorrected_blocks=%d\n",
 		(float)str / 655.35, (float)snr / 655.35, ber, uncorrected_blocks);
 
+#if !defined(DISABLE_DVB_V5_STATS)
 	{
 		// Check if DVB version is minimum 5.10.
 		// * https://linuxtv.org/docs/libdvbv5/index.html#dvbv5_stats ;
@@ -435,7 +437,7 @@ static void dvb_printLockInfo(int32_t fd_frontend, uint32_t *p_status)
 			printf("%s(): failed getting V5 statistics: %s\n", __func__, strerror(errno));
 		}
 	}
-
+#endif
 }
 
 int dvb_setFrontendType(int32_t fd_frontend, fe_delivery_system_t type)
