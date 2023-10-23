@@ -46,32 +46,32 @@
 #define TUNER_KU_HIGH_BAND_START  11700001 /*kHZ*/
 #define TUNER_KU_HIGH_BAND_END    12750000 /*kHZ*/
 
-#define get_modulation_name(mod)          table_IntStrLookup(fe_mod_desc, mod, "unknown")
-#define parse_modulation(modName)         table_IntStrLookupR(fe_mod_desc, modName, QAM_AUTO)
+#define get_modulation_name(mod)          table_UintStrLookup(fe_mod_desc, mod, "unknown")
+#define parse_modulation(modName)         table_UintStrLookupR(fe_mod_desc, modName, QAM_AUTO)
 
-#define get_delSys_name(delSys)           table_IntStrLookup(delivery_system_desc, delSys, "unknown")
-#define parse_delivery(delSysName)        table_IntStrLookupR(delivery_system_desc, delSysName, SYS_UNDEFINED)
+#define get_delSys_name(delSys)           table_UintStrLookup(delivery_system_desc, delSys, "unknown")
+#define parse_delivery(delSysName)        table_UintStrLookupR(delivery_system_desc, delSysName, SYS_UNDEFINED)
 
-#define get_polarization_name(pol)        table_IntStrLookup(fe_pol_desc, pol, "unknown")
-#define parse_polarization_name(polName)  table_IntStrLookupR(fe_pol_desc, polName, SEC_VOLTAGE_13)
+#define get_polarization_name(pol)        table_UintStrLookup(fe_pol_desc, pol, "unknown")
+#define parse_polarization_name(polName)  table_UintStrLookupR(fe_pol_desc, polName, SEC_VOLTAGE_13)
 
-#define get_feType_name(type)             table_IntStrLookup(fe_typeNames, type, "unknown")
+#define get_feType_name(type)             table_UintStrLookup(fe_typeNames, type, "unknown")
 
 /******************************************************************
 * LOCAL TYPEDEFS                                                  *
 *******************************************************************/
 
 typedef struct {
-	int32_t key;
+	uint32_t key;
 	const char *value;
-} table_IntStr_t;
+} table_UintStr_t;
 
 /******************************************************************
 * STATIC DATA                                                     *
 *******************************************************************/
 const char *version_str = "1.0 (2014-11-11)";
 
-table_IntStr_t fe_typeNames[] = {
+table_UintStr_t fe_typeNames[] = {
 	{FE_QPSK, "DVB-S"},
 	{FE_QAM,  "DVB-C"},
 	{FE_OFDM, "DVB-T"},
@@ -79,7 +79,7 @@ table_IntStr_t fe_typeNames[] = {
 	TABLE_INT_STR_END_VALUE
 };
 
-table_IntStr_t delivery_system_desc[] = {
+table_UintStr_t delivery_system_desc[] = {
 	{SYS_UNDEFINED,    "SYS_UNDEFINED"},
 	{SYS_DVBC_ANNEX_A, "SYS_DVBC_ANNEX_A"},//DVB-C
 	{SYS_DVBC_ANNEX_B, "SYS_DVBC_ANNEX_B"},
@@ -102,7 +102,7 @@ table_IntStr_t delivery_system_desc[] = {
 	TABLE_INT_STR_END_VALUE
 };
 
-table_IntStr_t fe_caps_desc[] = {
+table_UintStr_t fe_caps_desc[] = {
 	{FE_IS_STUPID,                   "FE_IS_STUPID"},
 	{FE_CAN_INVERSION_AUTO,          "FE_CAN_INVERSION_AUTO"},
 	{FE_CAN_FEC_1_2,                 "FE_CAN_FEC_1_2"},
@@ -135,7 +135,7 @@ table_IntStr_t fe_caps_desc[] = {
 	TABLE_INT_STR_END_VALUE
 };
 
-table_IntStr_t fe_mod_desc[] = {
+table_UintStr_t fe_mod_desc[] = {
 	{QPSK,     "QPSK"},
 	{QAM_16,   "QAM_16"},
 	{QAM_32,   "QAM_32"},
@@ -154,7 +154,7 @@ table_IntStr_t fe_mod_desc[] = {
 };
 
 //http://forum.sat-expert.com/antenny/2558-chto-takoe-h-v-i-l-r-ili-kak-resiver-pereklyuchaet-polyarizaciyu-i-ob-22kgc.html
-table_IntStr_t fe_pol_desc[] = {
+table_UintStr_t fe_pol_desc[] = {
 	{SEC_VOLTAGE_13,   "SEC_VOLTAGE_13"},
 	{SEC_VOLTAGE_18,   "SEC_VOLTAGE_18"},
 	{SEC_VOLTAGE_OFF,  "SEC_VOLTAGE_OFF"},
@@ -178,7 +178,7 @@ table_IntStr_t fe_pol_desc[] = {
 /******************************************************************
 * FUNCTION IMPLEMENTATION                     <Module>_<Word>+    *
 *******************************************************************/
-const char *table_IntStrLookup(const table_IntStr_t table[], int32_t key, char *defaultValue)
+const char *table_UintStrLookup(const table_UintStr_t table[], uint32_t key, char *defaultValue)
 {
 	int32_t i;
 /*	if(key < 0) {
@@ -192,7 +192,7 @@ const char *table_IntStrLookup(const table_IntStr_t table[], int32_t key, char *
 	return defaultValue;
 }
 
-int32_t table_IntStrLookupR(const table_IntStr_t table[], char *value, int32_t defaultValue)
+int32_t table_UintStrLookupR(const table_UintStr_t table[], char *value, int32_t defaultValue)
 {
 	int32_t i;
 	if(!value) {
@@ -209,7 +209,7 @@ int32_t table_IntStrLookupR(const table_IntStr_t table[], char *value, int32_t d
 static int dvb_printFrontendInfo(int frontend_fd)
 {
 	int                      err;
-	table_IntStr_t          *cur_desc = fe_caps_desc;
+	table_UintStr_t          *cur_desc = fe_caps_desc;
 	struct dvb_frontend_info fe_info;
 	struct dtv_properties    dtv_prop;
 	struct dtv_property      dvb_prop[DTV_MAX_COMMAND];
@@ -388,7 +388,7 @@ int dvb_diseqcSetup(int frontend_fd, uint32_t frequency, diseqcSwitchType_t type
 
 static void usage(char *progname)
 {
-	table_IntStr_t *table_IntStr_ptr;
+	table_UintStr_t *table_IntStr_ptr;
 
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("\t-h, --help                    - Print this message\n");
