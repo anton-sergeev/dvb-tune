@@ -182,6 +182,18 @@ table_UintStr_t fe_pol_desc[] = {
 	TABLE_UINT_STR_END_VALUE
 };
 
+table_UintStr_t fe_tateFlags[] = {
+	TABLE_UINT_STR_VALUE(FE_HAS_SIGNAL),
+	TABLE_UINT_STR_VALUE(FE_HAS_CARRIER),
+	TABLE_UINT_STR_VALUE(FE_HAS_VITERBI),
+	TABLE_UINT_STR_VALUE(FE_HAS_SYNC),
+	TABLE_UINT_STR_VALUE(FE_HAS_LOCK),
+	TABLE_UINT_STR_VALUE(FE_TIMEDOUT),
+	TABLE_UINT_STR_VALUE(FE_REINIT),
+	TABLE_UINT_STR_END_VALUE
+};
+
+
 /******************************************************************
 * FUNCTION IMPLEMENTATION                     <Module>_<Word>+    *
 *******************************************************************/
@@ -272,33 +284,37 @@ static int dvb_printFrontendInfo(int frontend_fd)
  *   @brief Print into stdout lock info
  *
  *   @param[in]  fd_frontend       Tuner file descriptor.
- *   @param[in]  p_status          Pointer to readed status. Force trying to read status if NULL pass.
+ *   @param[in]  p_status          Pointer to return status. Do nothing if NULL is pass.
  */
 static void dvb_printLockInfo(int32_t fd_frontend, uint32_t *p_status)
 {
-	int32_t ber;
-	u_int16_t snr, str;
-	int32_t uncorrected_blocks;
-	uint32_t status;
+	uint16_t  snr = 0, str = 0;
+	int32_t   ber = 0, uncorrected_blocks = 0;
+	uint32_t  status = 0;
+
+	#define ioctl_read_and_check(_request, _var) { \
+	  int ret = ioctl(fd_frontend, _request, &_var); \
+	  if(ret != 0) { \
+	    printf("%s(): get property %s failed: %s\n", __func__, #_request, strerror(errno)); \
+	  } \
+	}
+	ioctl_read_and_check(FE_READ_STATUS,              status);
+	ioctl_read_and_check(FE_READ_SNR,                 snr);
+	ioctl_read_and_check(FE_READ_BER,                 ber);
+	ioctl_read_and_check(FE_READ_SIGNAL_STRENGTH,     str);
+	ioctl_read_and_check(FE_READ_UNCORRECTED_BLOCKS,  uncorrected_blocks);
 
 	if(p_status) {
-		status = *p_status;
-	} else {
-		ioctl(fd_frontend, FE_READ_STATUS, &status);
+		*p_status = status;
 	}
-	ioctl(fd_frontend, FE_READ_SNR, &snr);
-	ioctl(fd_frontend, FE_READ_SIGNAL_STRENGTH, &str);
-	ioctl(fd_frontend, FE_READ_BER, &ber);
-	ioctl(fd_frontend, FE_READ_UNCORRECTED_BLOCKS, &uncorrected_blocks);
 
-	printf("status=0x%02x: %s%s%s%s%s%s%s\n", status,
-					(status & FE_HAS_SIGNAL)  ? "FE_HAS_SIGNAL "  : "",
-					(status & FE_HAS_CARRIER) ? "FE_HAS_CARRIER " : "",
-					(status & FE_HAS_VITERBI) ? "FE_HAS_VITERBI " : "",
-					(status & FE_HAS_SYNC)    ? "FE_HAS_SYNC "    : "",
-					(status & FE_HAS_LOCK)    ? "FE_HAS_LOCK "    : "",
-					(status & FE_TIMEDOUT)    ? "FE_TIMEDOUT "    : "",
-					(status & FE_REINIT)      ? "FE_REINIT "      : "");
+	printf("status=0x%08x: ", status);
+	table_for_each_entry(p_pos, fe_tateFlags) {
+		if(status & p_pos->key) {
+			printf("%s ", p_pos->value);
+		}
+	}
+	puts("");
 
 	printf("snr=%3d%%\tstr=%3d%%\tber=%7d\tuncorrected_blocks=%d\n", (int)snr*100/65535, (int)str*100/65535, ber, uncorrected_blocks);
 
@@ -663,7 +679,6 @@ int main(int argc, char **argv)
 
 	while(1) {
 		uint32_t status;
-		ioctl(fd_frontend, FE_READ_STATUS, &status);
 		dvb_printLockInfo(fd_frontend, &status);
 
 		if(status & FE_HAS_LOCK) {
@@ -683,9 +698,7 @@ int main(int argc, char **argv)
 	while(dont_close_fe) {
 		sleep(1);
 		if(verbose) {
-			uint32_t status;
-			ioctl(fd_frontend, FE_READ_STATUS, &status);
-			dvb_printLockInfo(fd_frontend, &status);
+			dvb_printLockInfo(fd_frontend, NULL);
 		}
 	}
 
