@@ -383,7 +383,7 @@ static void dvb_printLockInfo(int32_t fd_frontend, uint32_t *p_status)
 			TABLE_UINT_STR_END_VALUE
 		};
 		
-		table_for_each_entry(p_pos, fe_stats) { // for(uint32_t i = 0; i < ARRAY_SIZE(stats); i++) {
+		table_for_each_entry(p_pos, fe_stats) { // for(uint32_t i = 0; i < ARRAY_SIZE(stats); i++)
 			SET_DTV_PRPERTY_0(props, propCount, p_pos->key);
 		}
 		cmds.num = propCount;
@@ -543,7 +543,7 @@ static void usage(char *progname)
 	}
 	printf("> - Select delivery type\n");
 
-	printf("\t-f, --frequency=FREQUENCY     - Set frequency in Hz (in KHz for sattelite delivery system)\n");
+	printf("\t-f, --frequency=FREQUENCY     - Set frequency in Hz (in kHz for sattelite delivery system)\n");
 	printf("\t-s, --symbol-rate=SYMBOLRATE  - Set symbol rate in symbol per second\n");
 	printf("\t-p, --plp-id=PLPID            - Set plp id (for DVB-T2)\n");
 
@@ -690,7 +690,7 @@ int main(int argc, char **argv)
 			return -5;
 		}
 
-		printf( "Selected delivery sistem: %s\n", get_delSys_name(delivery_system));
+		printf( "Selected delivery system: %s\n", get_delSys_name(delivery_system));
 		// TODO: check if we on DVB API v5 here.
 		dvb_setFrontendType(fd_frontend, delivery_system);
 		if(show_tuner_info) {
@@ -766,8 +766,8 @@ int main(int argc, char **argv)
 			frequency -= freqLO;
 
 			printf( "Tune frontend on:\n"
-					"\tfreq         = %9d KHz\n"
-					"\tfreqLO       = %9d KHz\n"
+					"\tfreq         = %9d kHz\n"
+					"\tfreqLO       = %9d kHz\n"
 					"\tsymbol_rate  = %9d Hz\n"
 					"\tmodulation   = %s\n"
 					"\tpolarization = %s\n",
