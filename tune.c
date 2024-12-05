@@ -83,7 +83,7 @@ typedef struct {
 /******************************************************************
 * STATIC DATA                                                     *
 *******************************************************************/
-const char *version_str = "1.1 (2023-10-23)";
+const char *version_str = "1.1 (2024-12-05)";
 
 table_UintStr_t fe_typeNames[] = {
 	{FE_QPSK, "DVB-S"},
@@ -408,7 +408,7 @@ static void dvb_printLockInfo(int32_t fd_frontend, uint32_t *p_status)
 								printf("%s", (j > 0) ? "|" : "");
 								switch(_st.scale) {
 								case FE_SCALE_NOT_AVAILABLE:
-									printf("not available");
+									printf("NA");
 									break;
 								case FE_SCALE_DECIBEL:
 									printf("%7.3fdB", (float)_st.svalue / 1000.0);
@@ -763,7 +763,7 @@ int main(int argc, char **argv)
 				printf("%s()[%d]: !!!!!!\n", __func__, __LINE__);
 			}
 			//north america: freqLO = 11250000
-			frequency -= freqLO;
+			frequency = abs((int32_t)frequency - (int32_t)freqLO);
 
 			printf( "Tune frontend on:\n"
 					"\tfreq         = %9d kHz\n"
