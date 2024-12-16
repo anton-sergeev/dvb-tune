@@ -83,7 +83,7 @@ typedef struct {
 /******************************************************************
 * STATIC DATA                                                     *
 *******************************************************************/
-const char *version_str = "1.1 (2024-12-05)";
+const char *version_str = "1.1 (2024-12-16)";
 
 table_UintStr_t fe_typeNames[] = {
 	{FE_QPSK, "DVB-S"},
@@ -525,7 +525,7 @@ int dvb_diseqcSetup(int frontend_fd, uint32_t frequency, diseqcSwitchType_t type
 	return 0;
 }
 
-static void usage(char *progname)
+static void usage(char *progname, int32_t verbose)
 {
 
 	printf("Usage: %s [OPTIONS]\n", progname);
@@ -556,6 +556,23 @@ static void usage(char *progname)
 	printf("\t-w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
 	printf("\t-z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V\n");
 	printf("\t-q, --dyseqc=PORT             - Use dyseqc SwitchSimple PORT (for satelite delivery system only)\n");
+	printf("\t    --custom-LNB-LO=FREQUENCY - Use custom LNB local oscilator frequency in kHz.\n");
+	if(verbose > 0) {
+		printf("\t                                Note: This option disables checking for main frequency out-of-bounds.\n");
+		printf("\t                                By default the following scheme (named \"Universal\" for Ku band) is used:\n");
+		printf("\t                                  *  3.40- 4.20 GHz, C band       => LO:  5.15 GHz\n");
+		printf("\t                                  * 10.70-11.70 GHz, Ku  low band => LO:  9.75 GHz\n");
+		printf("\t                                  * 11.70-12.75 GHz, Ku high band => LO: 10.60 GHz\n");
+		printf("\t                                Other known LNB types:\n");
+		printf("\t                                  * 11.70-12.20 GHz, Ku band, LO: 10.75  GHz - Standard North America\n");
+		printf("\t                                  * 12.20-12.70 GHz, Ku band, LO: 10.25  GHz - North America DBS\n");
+		printf("\t                                  *                  Ku band, LO: 10.60  GHz - from tune-s2\n");
+		printf("\t                                  *                  Ku band, LO: 10.745 GHz - from tune-s2\n");
+		printf("\t                                  *                  Ku band, LO: 10.00  GHz - \"standard\" from szap-s2\n");
+		printf("\t                                  *  18.2-19.2  GHz, Ka band, LO: 17.25  GHz - Norsat Ka band\n");
+		printf("\t                                  *  20.2-21.2  GHz, Ka band, LO: 19.25  GHz -  low Ka band\n");
+		printf("\t                                  *  21.2-22.2  GHz, Ka band, LO: 20.25  GHz - high Ka band\n");
+	}
 	printf("\t-r, --read-only               - Don't setup tuner, just read state\n");
 
 	return;
@@ -588,6 +605,7 @@ int main(int argc, char **argv)
 	int32_t                polarization = SEC_VOLTAGE_13;//0 - horizontal, 1 - vertical
 	int32_t                dyseqc_port = -1;
 	int32_t                read_only = 0;
+	int32_t                custom_LNB_LO = -1;
 	static struct option   long_options[] = {
 		{"help",          no_argument,        0, 'h'},
 		{"version",       no_argument,        0, 'V'},
@@ -606,13 +624,14 @@ int main(int argc, char **argv)
 		{"pol",           required_argument,  0, 'z'},
 		{"dyseqc",        required_argument,  0, 'q'},
 		{"read-only",     no_argument,        0, 'r'},
+		{"custom-LNB-LO", required_argument,  0, 0x10000000},
 		{0, 0, 0, 0},
 	};
 
 	while((opt = getopt_long(argc, argv, "hVivd:t:f:s:m:p:n:cw:z:q:r", long_options, &option_index)) != -1) {
 		switch(opt) {
 			case 'h':
-				usage(argv[0]);
+				usage(argv[0], verbose);
 				return 0;
 				break;
 			case 'V':
@@ -667,8 +686,11 @@ int main(int argc, char **argv)
 			case 'r':
 				read_only = 1;
 				break;
+			case 0x10000000: // custom-LNB-LO
+				custom_LNB_LO = atoi(optarg);
+				break;
 			default:
-				usage(argv[0]);
+				usage(argv[0], verbose);
 				return -3;
 				break;
 		}
@@ -686,7 +708,7 @@ int main(int argc, char **argv)
 
 		if(frequency == 0) {
 			printf("ERROR: Frequency not setted!\n");
-			usage(argv[0]);
+			usage(argv[0], verbose);
 			return -5;
 		}
 
@@ -742,6 +764,7 @@ int main(int argc, char **argv)
 			SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);//VSB_8
 
 		} else if((delivery_system == SYS_DVBS) || (delivery_system == SYS_DVBS2)) {//DVB-S/S2
+			uint32_t frequencyOrig = frequency;
 			uint32_t freqLO;
 			uint32_t tone = SEC_TONE_OFF;
 
@@ -750,7 +773,10 @@ int main(int argc, char **argv)
 				dvb_diseqcSetup(fd_frontend, frequency, diseqcSwitchSimple, dyseqc_port, polarization);
 			}
 
-			if((TUNER_C_BAND_START <= frequency) && (frequency <= TUNER_C_BAND_END)) {
+			if(custom_LNB_LO > 0) {
+				freqLO = custom_LNB_LO;
+				tone = SEC_TONE_OFF;
+			} else if((TUNER_C_BAND_START <= frequency) && (frequency <= TUNER_C_BAND_END)) {
 				freqLO = 5150000;
 				tone = SEC_TONE_OFF;
 			} else if((TUNER_KU_LOW_BAND_START <= frequency) && (frequency <= TUNER_KU_LOW_BAND_END)) {
@@ -762,16 +788,20 @@ int main(int argc, char **argv)
 			} else {
 				printf("%s()[%d]: !!!!!!\n", __func__, __LINE__);
 			}
-			//north america: freqLO = 11250000
 			frequency = abs((int32_t)frequency - (int32_t)freqLO);
 
-			printf( "Tune frontend on:\n"
-					"\tfreq         = %9d kHz\n"
-					"\tfreqLO       = %9d kHz\n"
-					"\tsymbol_rate  = %9d Hz\n"
-					"\tmodulation   = %s\n"
-					"\tpolarization = %s\n",
-					frequency, freqLO, symbol_rate, get_modulation_name(modulation), get_polarization_name(polarization));
+			printf(
+				"Tune frontend on:\n"
+				"\tfreq         = %9d kHz\n"
+				"\tfreq LO      = %9d kHz%s\n"
+				"\tfreq inter   = %9d kHz\n"
+				"\tsymbol_rate  = %9d Hz\n"
+				"\tmodulation   = %s\n"
+				"\tpolarization = %s\n",
+				frequencyOrig, freqLO, (custom_LNB_LO > 0) ? " <- custom" : "",
+				frequency, symbol_rate,
+				get_modulation_name(modulation), get_polarization_name(polarization)
+			);
 
 			SET_DTV_PRPERTY(dtv, propCount, DTV_FREQUENCY, frequency);
 			SET_DTV_PRPERTY(dtv, propCount, DTV_INVERSION, inversion);//INVERSION_ON
