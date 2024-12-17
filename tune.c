@@ -61,10 +61,7 @@
 #define TUNER_KU_HIGH_BAND_END    12750000 /*kHZ*/
 
 #define get_modulation_name(mod)          table_UintStrLookup(fe_mod_desc, mod, "unknown")
-#define parse_modulation(modName)         table_UintStrLookupR(fe_mod_desc, modName, QAM_AUTO)
-
 #define get_delSys_name(delSys)           table_UintStrLookup(delivery_system_desc, delSys, "unknown")
-#define parse_delivery(delSysName)        table_UintStrLookupR(delivery_system_desc, delSysName, SYS_UNDEFINED)
 
 #define get_polarization_name(pol)        table_UintStrLookup(fe_pol_desc, pol, "unknown")
 #define parse_polarization_name(polName)  table_UintStrLookupR(fe_pol_desc, polName, SEC_VOLTAGE_13)
@@ -83,7 +80,7 @@ typedef struct {
 /******************************************************************
 * STATIC DATA                                                     *
 *******************************************************************/
-const char *version_str = "1.1 (2024-12-16)";
+const char *version_str = "1.1 (2024-12-17)";
 
 table_UintStr_t fe_typeNames[] = {
 	{FE_QPSK, "DVB-S"},
@@ -239,6 +236,107 @@ int32_t table_UintStrLookupR(const table_UintStr_t table[], const char *value, i
 	return defaultValue;
 }
 
+
+static int cmppointers(const void *p1, const void *p2)
+{
+	const void *p1p = *((const void **)p1);
+	const void *p2p = *((const void **)p2);
+	return (p1p == p2p) ? 0 : ((p1p < p2p) ? -1 : 1);
+}
+
+static int32_t parse_name(const char *name, const table_UintStr_t dictionary[], int32_t default_id, const char *prefix)
+{
+	#define NAME_MAX_LEN 256
+	int32_t name_id = default_id;
+	const char *replaceSymbolsPtr[5]; // Note: last pointer is reserved for name end
+	const char replaceSymbols[] = {' ', '-'};
+	const char replaceSymbolTo[] = {0x0, '_'}; // 0x0 mean skip
+	size_t replaceSymbolCount = 0;
+	size_t name_len = 0;
+	size_t prefix_len = 0;
+	bool addPrefix = false;
+
+	if(name == NULL) {
+		printf("Error: No name passed to parse!");
+		return name_id;
+	} else {
+		name_len = strlen(name);
+	}
+
+	if(prefix != NULL) {
+		prefix_len = strlen(prefix);
+		if(strncasecmp(name, prefix, prefix_len) != 0) {
+			addPrefix = true;
+		}
+	}
+
+	if((name_len + prefix_len) >= NAME_MAX_LEN) {
+		printf("Error: Name too long to parse, length=%ld, name=\"%s\"!", name_len, name);
+		return name_id;
+	}
+
+	for(size_t i = 0; i < ARRAY_SIZE(replaceSymbols); i++) {
+		const char *symbol = name;
+		while(replaceSymbolCount < ARRAY_SIZE(replaceSymbolsPtr)) {
+			symbol = strchr(symbol, replaceSymbols[i]);
+			if(symbol == NULL) {
+				break;
+			}
+			replaceSymbolsPtr[replaceSymbolCount] = symbol;
+			replaceSymbolCount++;
+			symbol++;
+		}
+	}
+	if(replaceSymbolCount >= ARRAY_SIZE(replaceSymbolsPtr)) {
+		printf("Too much variants in delivery system value, skip some!");
+	}
+	replaceSymbolsPtr[replaceSymbolCount] = name + name_len;
+	qsort(replaceSymbolsPtr, replaceSymbolCount + 1, sizeof(replaceSymbolsPtr[0]), cmppointers);
+
+	for(int32_t mask = 0; mask < (1 << replaceSymbolCount); mask++) {
+		char mangled_name[NAME_MAX_LEN];
+		char *_name_ptr = mangled_name;
+
+		if(addPrefix) {
+			memcpy(_name_ptr, prefix, prefix_len);
+			_name_ptr += prefix_len;
+		}
+		memcpy(_name_ptr, name, replaceSymbolsPtr[0] - name);
+		_name_ptr += replaceSymbolsPtr[0] - name;
+		for(uint32_t replaceSymbolId = 0; replaceSymbolId < replaceSymbolCount; replaceSymbolId++) {
+			char replSym = replaceSymbolTo[(mask >> replaceSymbolId) & 0x01];
+			if(replSym != 0x0) {
+				*_name_ptr = replSym;
+				_name_ptr++;
+			}
+			size_t pieceSize = replaceSymbolsPtr[replaceSymbolId + 1] - replaceSymbolsPtr[replaceSymbolId] - 1;
+			if(pieceSize > 0) {
+				memcpy(_name_ptr, replaceSymbolsPtr[replaceSymbolId] + 1, pieceSize);
+				_name_ptr += pieceSize;
+			}
+		}
+		*_name_ptr = 0x0;
+
+		name_id = table_UintStrLookupR(dictionary, mangled_name, default_id);
+		if(name_id != default_id) {
+			// printf("%s()[%d]: Debug: mangled_name=%s, name_id=%d, addPrefix=%d, replaceSymbolCount=%ld\n",
+			// 		__func__, __LINE__, mangled_name, name_id, addPrefix, replaceSymbolCount);
+			return name_id;
+		}
+	}
+
+	return name_id;
+}
+
+static int32_t parse_delivery(const char *delSysName)
+{
+	return parse_name(delSysName, delivery_system_desc, SYS_UNDEFINED, "SYS_");
+}
+
+static int32_t parse_modulation(const char *modName)
+{
+	return parse_name(modName, fe_mod_desc, QAM_AUTO, NULL);
+}
 
 static int dvb_isDelSysSatellite(fe_delivery_system_t delSys)
 {
