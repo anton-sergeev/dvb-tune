@@ -629,49 +629,55 @@ static void usage(char *progname, int32_t verbose)
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("Setup or read status of Linux DVB API v5 tuner frontends.\n\n");
 	printf("Options:\n");
-	printf("\t-h, --help                    - Print this message\n");
-	printf("\t-V, --version                 - Print version\n");
-	printf("\t-v, --verbose                 - Be verbose\n");
-	printf("\t-d, --device=DEVID            - Choose dvb device /dev/dvb<DEVID>.frontend0\n");
-	printf("\t-i, --info                    - Print tuner info\n");
-	printf("\t-t, --del-sys=<");
-
+	printf("  -h, --help                    - Print this message\n");
+	printf("  -V, --version                 - Print version\n");
+	printf("  -v, --verbose                 - Be verbose\n");
+	printf("  -d, --device=ID               - Choose dvb device /dev/dvb/device<ID>/frontend0\n");
+	printf("  -i, --info                    - Print tuner info\n");
+	printf("  -t, --del-sys=<");
 	table_for_each_entry(p_item, delivery_system_desc) {
-		printf("%s%s", (p_item == delivery_system_desc) ? "" : "|", p_item->value);
+		const char *reduced = p_item->value;
+		if(strncasecmp(p_item->value, "SYS_", 4) == 0) {
+			reduced += 4;
+		}
+		printf("%s%s", (p_item == delivery_system_desc) ? "" : "|", reduced);
 	}
-	printf("> - Select delivery type\n");
+	printf(">\n");
+	printf("                                - Select delivery type\n");
 
-	printf("\t-f, --frequency=FREQUENCY     - Set frequency in Hz (in kHz for sattelite delivery system)\n");
-	printf("\t-s, --symbol-rate=SYMBOLRATE  - Set symbol rate in symbol per second\n");
-	printf("\t-p, --plp-id=PLPID            - Set plp id (for DVB-T2)\n");
+	printf("  -f, --frequency=FREQUENCY     - Set frequency in Hz (in kHz for sattelite delivery system)\n");
+	printf("  -s, --symbol-rate=SYMBOLRATE  - Set symbol rate in symbol per second\n");
+	printf("  -p, --plp-id=PLPID            - Set plp id (for DVB-T2)\n");
 
-	printf("\t-m, --modulation=<");
+	printf("  -m, --modulation=<");
 	table_for_each_entry(p_item, fe_mod_desc) {
 		printf("%s%s", (p_item == fe_mod_desc) ? "" : "|", p_item->value);
 	}
-	printf("> - Set modulation\n");
-	printf("\t-c, --close-fe                - Close frontend at the end (infinity wait is default)\n");
-	printf("\t-w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
-	printf("\t-z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V\n");
-	printf("\t-q, --dyseqc=PORT             - Use dyseqc SwitchSimple PORT (for satelite delivery system only)\n");
-	printf("\t    --custom-LNB-LO=FREQUENCY - Use custom LNB local oscilator frequency in kHz.\n");
+	printf(">\n");
+	printf("                                - Set modulation\n");
+	printf("  -c, --close-fe                - Close frontend at the end (infinity wait is default)\n");
+	printf("  -w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
+	printf("  -z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V\n");
+	printf("  -n, --inversion=N             - 0 - off, 1 - on, auto by default\n");
+	printf("  -q, --dyseqc=PORT             - Use dyseqc SwitchSimple PORT (for satelite delivery system only)\n");
+	printf("      --custom-LNB-LO=FREQUENCY - Use custom LNB local oscilator frequency in kHz.\n");
 	if(verbose > 0) {
-		printf("\t                                Note: This option disables checking for main frequency out-of-bounds.\n");
-		printf("\t                                By default the following scheme (named \"Universal\" for Ku band) is used:\n");
-		printf("\t                                  *  3.40- 4.20 GHz, C band       => LO:  5.15 GHz\n");
-		printf("\t                                  * 10.70-11.70 GHz, Ku  low band => LO:  9.75 GHz\n");
-		printf("\t                                  * 11.70-12.75 GHz, Ku high band => LO: 10.60 GHz\n");
-		printf("\t                                Other known LNB types:\n");
-		printf("\t                                  * 11.70-12.20 GHz, Ku band, LO: 10.75  GHz - Standard North America\n");
-		printf("\t                                  * 12.20-12.70 GHz, Ku band, LO: 10.25  GHz - North America DBS\n");
-		printf("\t                                  *                  Ku band, LO: 10.60  GHz - from tune-s2\n");
-		printf("\t                                  *                  Ku band, LO: 10.745 GHz - from tune-s2\n");
-		printf("\t                                  *                  Ku band, LO: 10.00  GHz - \"standard\" from szap-s2\n");
-		printf("\t                                  *  18.2-19.2  GHz, Ka band, LO: 17.25  GHz - Norsat Ka band\n");
-		printf("\t                                  *  20.2-21.2  GHz, Ka band, LO: 19.25  GHz -  low Ka band\n");
-		printf("\t                                  *  21.2-22.2  GHz, Ka band, LO: 20.25  GHz - high Ka band\n");
+		printf("                                  Note: This option disables checking for main frequency out-of-bounds.\n");
+		printf("                                  By default the following scheme (named \"Universal\" for Ku band) is used:\n");
+		printf("                                    *  3.40- 4.20 GHz, C band       => LO:  5.15 GHz\n");
+		printf("                                    * 10.70-11.70 GHz, Ku  low band => LO:  9.75 GHz\n");
+		printf("                                    * 11.70-12.75 GHz, Ku high band => LO: 10.60 GHz\n");
+		printf("                                  Other known LNB types:\n");
+		printf("                                    * 11.70-12.20 GHz, Ku band, LO: 10.75  GHz - Standard North America\n");
+		printf("                                    * 12.20-12.70 GHz, Ku band, LO: 10.25  GHz - North America DBS\n");
+		printf("                                    *                  Ku band, LO: 10.60  GHz - from tune-s2\n");
+		printf("                                    *                  Ku band, LO: 10.745 GHz - from tune-s2\n");
+		printf("                                    *                  Ku band, LO: 10.00  GHz - \"standard\" from szap-s2\n");
+		printf("                                    *  18.2-19.2  GHz, Ka band, LO: 17.25  GHz - Norsat Ka band\n");
+		printf("                                    *  20.2-21.2  GHz, Ka band, LO: 19.25  GHz -  low Ka band\n");
+		printf("                                    *  21.2-22.2  GHz, Ka band, LO: 20.25  GHz - high Ka band\n");
 	}
-	printf("\t-r, --read-only               - Don't setup tuner, just read state\n");
+	printf("  -r, --read-only               - Don't setup tuner, just read state\n");
 
 	return;
 }
