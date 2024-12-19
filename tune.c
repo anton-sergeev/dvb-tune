@@ -37,7 +37,7 @@
 			prop[id].u.data = val; \
 			id++; \
 		} else { \
-			printf("%s(): can't set %s, too many properties\n", __func__, #_cmd); \
+			fprintf(stderr, "%s(): can't set %s, too many properties\n", __func__, #_cmd); \
 		}
 #define SET_DTV_PRPERTY SET_DTV_PRPERTY_1
 #define SET_DTV_PRPERTY_0(prop, id, _cmd) SET_DTV_PRPERTY_1(prop, id, _cmd, 0)
@@ -259,7 +259,7 @@ static int32_t parse_name(const char *name, const table_UintStr_t dictionary[], 
 	bool addPrefix = false;
 
 	if(name == NULL) {
-		printf("Error: No name passed to parse!");
+		fprintf(stderr, "Error: No name passed to parse!");
 		return name_id;
 	} else {
 		name_len = strlen(name);
@@ -273,7 +273,7 @@ static int32_t parse_name(const char *name, const table_UintStr_t dictionary[], 
 	}
 
 	if((name_len + prefix_len) >= NAME_MAX_LEN) {
-		printf("Error: Name too long to parse, length=%ld, name=\"%s\"!", name_len, name);
+		fprintf(stderr, "Error: Name too long to parse, length=%ld, name=\"%s\"!", name_len, name);
 		return name_id;
 	}
 
@@ -290,7 +290,7 @@ static int32_t parse_name(const char *name, const table_UintStr_t dictionary[], 
 		}
 	}
 	if(replaceSymbolCount >= ARRAY_SIZE(replaceSymbolsPtr)) {
-		printf("Too much variants in delivery system value, skip some!");
+		printf("Warning: too many potential variants/variations in name value, skip some!");
 	}
 	replaceSymbolsPtr[replaceSymbolCount] = name + name_len;
 	qsort(replaceSymbolsPtr, replaceSymbolCount + 1, sizeof(replaceSymbolsPtr[0]), cmppointers);
@@ -390,14 +390,14 @@ static int dvb_printFrontendInfo(int frontend_fd)
 					}
 				}
 			} else {
-				printf("%s(): querying delivery system failed: %s\n", __func__, strerror(errno));
+				fprintf(stderr, "%s(): querying delivery system failed: %s\n", __func__, strerror(errno));
 			}
 		}
 	}
 	do {
 		err = ioctl(frontend_fd, FE_GET_INFO, &fe_info);
 		if(err < 0) {
-			printf("%s(): ioctl FE_GET_INFO failed", __func__);
+			fprintf(stderr, "%s(): ioctl FE_GET_INFO failed", __func__);
 		}
 	} while(err < 0);
 
@@ -438,7 +438,7 @@ static void dvb_printLockInfo(int32_t fd_frontend, uint32_t *p_status)
 	#define ioctl_read_and_check(_request, _var) { \
 	  int ret = ioctl(fd_frontend, _request, &_var); \
 	  if(ret != 0) { \
-	    printf("%s(): get property %s failed: %s\n", __func__, #_request, strerror(errno)); \
+	    fprintf(stderr, "%s(): get property %s failed: %s\n", __func__, #_request, strerror(errno)); \
 	  } \
 	}
 	ioctl_read_and_check(FE_READ_STATUS,              status);
@@ -534,7 +534,7 @@ static void dvb_printLockInfo(int32_t fd_frontend, uint32_t *p_status)
 			}
 			puts("");
 		} else {
-			printf("%s(): failed getting V5 statistics: %s\n", __func__, strerror(errno));
+			fprintf(stderr, "%s(): failed getting V5 statistics: %s\n", __func__, strerror(errno));
 		}
 	}
 #endif
@@ -549,8 +549,8 @@ int dvb_setFrontendType(int32_t fd_frontend, fe_delivery_system_t type)
 	};
 	p.u.data = type;
 
-	if (ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
-		printf("%s(): set property failed: %s\n", __func__, strerror(errno));
+	if(ioctl(fd_frontend, FE_SET_PROPERTY, &cmdseq) == -1) {
+		fprintf(stderr, "%s(): set property failed: %s\n", __func__, strerror(errno));
 		return -1;
 	}
 
@@ -896,7 +896,7 @@ int main(int argc, char **argv)
 	setup_sighandler(argv[0]);
 
 	if(dvb_openFronend(adapter_id, frontend_id, &fd_frontend, read_only) != 0) {
-		printf("Error open adapter=%d frontend=%d\n", adapter_id, frontend_id);
+		fprintf(stderr, "Error open adapter=%d frontend=%d\n", adapter_id, frontend_id);
 		return -1;
 	}
 
@@ -906,7 +906,7 @@ int main(int argc, char **argv)
 		uint32_t              propCount = 0;
 
 		if(frequency == 0) {
-			printf("ERROR: Frequency not setted!\n");
+			fprintf(stderr, "ERROR: Frequency not setted!\n");
 			usage(argv[0], verbose);
 			return -5;
 		}
@@ -963,9 +963,9 @@ int main(int argc, char **argv)
 			SET_DTV_PRPERTY(dtv, propCount, DTV_MODULATION, modulation);//VSB_8
 
 		} else if((delivery_system == SYS_DVBS) || (delivery_system == SYS_DVBS2)) {//DVB-S/S2
-			uint32_t frequencyOrig = frequency;
-			uint32_t freqLO;
-			uint32_t tone = SEC_TONE_OFF;
+			uint32_t frequencyOrig  = frequency;
+			uint32_t freqLO         = 0;
+			uint32_t tone           = SEC_TONE_OFF;
 
 			// DiSEqC:
 			if((diseqc_port >= 0) && (diseqc_port < 4)) {
@@ -985,7 +985,7 @@ int main(int argc, char **argv)
 				freqLO = 10600000;
 				tone = SEC_TONE_ON;
 			} else {
-				printf("%s()[%d]: !!!!!!\n", __func__, __LINE__);
+				printf("%s(): Warning: Unknown frequency range!\n", __func__);
 			}
 			frequency = abs((int32_t)frequency - (int32_t)freqLO);
 
@@ -1042,7 +1042,7 @@ int main(int argc, char **argv)
 			*/
 
 		} else {
-			printf("Not supported delivery system: %s\n", get_delSys_name(delivery_system));
+			fprintf(stderr, "Not supported delivery system: %s\n", get_delSys_name(delivery_system));
 			return -2;
 		}
 		SET_DTV_PRPERTY_0(dtv, propCount, DTV_TUNE);
