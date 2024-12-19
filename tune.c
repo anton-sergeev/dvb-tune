@@ -628,7 +628,7 @@ static void usage(char *progname, int32_t verbose)
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("Setup or read status of Linux DVB API v5 tuner frontends.\n\n");
 	printf("Common options:\n");
-	printf("  -h, --help                  - Print this message, use verbose mode ('-v') for printing more info\n");
+	printf("  -h, --help                  - Print this message, use verbose mode ('-v'/'-vv'/'-vvv') for printing more info\n");
 	printf("  -V, --version               - Print version\n");
 	printf("  -v, --verbose               - Be verbose\n");
 	printf("  -d, --adapter=A_ID          - Choose dvb adapter /dev/dvb/adapter<A_ID>/frontend0 (0 by default)\n");
@@ -681,6 +681,61 @@ static void usage(char *progname, int32_t verbose)
 		printf("                                    *  18.2-19.2  GHz, Ka band, LO: 17.25  GHz - Norsat Ka band\n");
 		printf("                                    *  20.2-21.2  GHz, Ka band, LO: 19.25  GHz -  low Ka band\n");
 		printf("                                    *  21.2-22.2  GHz, Ka band, LO: 20.25  GHz - high Ka band\n");
+	}
+
+	if(verbose > 1) {
+		printf("\n\n");
+		printf("Valid/used parameters, except frequency, for various delivery systems.\n");
+		printf("Well-known and tested types:\n");
+		printf("  * DVB-C Annex A, widely used cable standard:\n");
+		printf("    * symbol rate;\n");
+		printf("    * modulation:                 QAM_16, QAM_32, QAM_64, QAM_256\n");
+		printf("  * DVB-T:\n");
+		printf("    * bandwidth, Hz:              6000000, 7000000, 8000000\n");
+		printf("    * modulation (optional):      QPSK, QAM_16, QAM_64\n");
+		printf("  * DVB-T2:\n");
+		printf("    * bandwidth, Hz:              1712000, 5000000, 6000000, 7000000, 8000000, 10000000\n");
+		printf("    * modulation (optional):      QPSK, QAM_16, QAM_64, QAM_256\n");
+		printf("    * stream id/plp id;\n");
+		printf("  * DVB-S:\n");
+		printf("    * symbol rate;\n");
+		printf("    * modulation (optional):      QPSK\n");
+		printf("  * DVB-S2/S2X:\n");
+		printf("    * symbol rate;\n");
+		printf("    * modulation S2  (optional):  QPSK, PSK_8, APSK_16, APSK_32\n");
+		printf("    * modulation S2X (optional?): APSK_8_L, APSK_16_L, APSK_32_L, APSK_64, APSK_64_L\n");
+		printf("    * stream id (note: not supported now);\n");
+	}
+
+	if(verbose > 2) {
+		printf("\n");
+		printf("A group of delivery systems known only theoretically:\n");
+		printf("  * DVB-C Annex B, optimized for 6MHz, and is used in Japan:\n");
+		printf("    * modulation:             QAM_64\n");
+		printf("  * DVB-C Annex C, only used on a few Countries like the United States:\n");
+		printf("    * symbol rate;\n");
+		printf("    * modulation:             QAM_16, QAM_32, QAM_64, QAM_256\n");
+		printf("  * DVB-C2:\n");
+		printf("    * symbol rate;\n");
+		printf("    * modulation:             QPSK, QAM_16, QAM_32, QAM_64, QAM_256, QAM_1024, QAM_4096\n");
+		printf("    * stream id;\n");
+		printf("  * ATSC, terrestrial (note: supported):\n");
+		printf("    * bandwidths (optional?): 6000000\n");
+		printf("    * modulation (optional?): VSB_8, VSB_16\n");
+		printf("  * ATSC-M/H, terrestrial;\n");
+		printf("  * ISDB-T, terrestrial:\n");
+		printf("    * bandwidth, Hz:          5000000, 6000000, 7000000, 8000000\n");
+		printf("    * modulation (optional?): QPSK, DQPSK, QAM_16, QAM_64\n");
+		printf("  * ISDB-S, setellite:\n");
+		printf("    * modulation (optional):  PSK_8, QPSK, BPSK (?)\n");
+		printf("  * ISDB-C, cable;\n");
+		printf("  * DTMB, terrestrial:\n");
+		printf("    * bandwidth, Hz:          5000000, 6000000, 7000000, 8000000\n");
+		printf("    * modulation (optional?): QAM_16, QAM_32, QAM_64, QAM_4_NR, 4-QAM (?)\n");
+		printf("  * DSS, setellite;\n");
+		printf("  * DAB, terrestrial(?);\n");
+		printf("  * DVB-H, terrestrial;\n");
+		printf("  * DVB-S Turbo, setellite;\n");
 	}
 
 	return;
@@ -754,7 +809,7 @@ int main(int argc, char **argv)
 				show_tuner_info = 1;
 				break;
 			case 'v':
-				verbose = 1;
+				verbose++;
 				break;
 			case 'd':
 				adapter_id = atoi(optarg);
