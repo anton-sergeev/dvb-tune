@@ -649,20 +649,23 @@ static void setup_sighandler(const char *progname)
 static void usage(const char *progname, int32_t verbose)
 {
 	printf("Usage: %s [OPTIONS]\n", progname);
-	printf("Setup or read status of Linux DVB API v5 tuner frontends.\n\n");
-	printf("Common options:\n");
-	printf("  -h, --help                  - Print this message, use verbose mode ('-v'/'-vv'/'-vvv') for printing more info\n");
-	printf("  -V, --version               - Print version\n");
-	printf("  -v, --verbose               - Be verbose\n");
-	printf("  -d, --adapter=A_ID          - Choose dvb adapter /dev/dvb/adapter<A_ID>/frontend0 (0 by default)\n");
-	printf("      --frontend=F_ID         - Choose dvb frontend /dev/dvb/adapter0/frontend<F_ID> (0 by default)\n");
-	printf("  -i, --info                  - Print tuner info\n");
-	printf("  -c, --close-fe              - Exit after locking try\n");
-	printf("  -w, --wait-seconds=SECONDS  - Wait at most SECONDS for frontend locking\n");
-	printf("  -r, --read-only             - Don't setup tuner, just read state\n");
-	printf("\n");
-	printf("Options for tuner configuration:\n");
-	printf("  -t, --del-sys=<");
+	printf(
+		"\nSetup or read status of Linux DVB API v5 tuner frontends."
+		"\n"
+		"\nCommon options:"
+		"\n  -h, --help                  - Print this message, use verbose mode ('-v'/'-vv'/'-vvv') for printing more info"
+		"\n  -V, --version               - Print version"
+		"\n  -v, --verbose               - Be verbose"
+		"\n  -d, --adapter=A_ID          - Choose dvb adapter /dev/dvb/adapter<A_ID>/frontend0 (0 by default)"
+		"\n      --frontend=F_ID         - Choose dvb frontend /dev/dvb/adapter0/frontend<F_ID> (0 by default)"
+		"\n  -i, --info                  - Print tuner info"
+		"\n  -c, --close-fe              - Exit after locking try"
+		"\n  -w, --wait-seconds=SECONDS  - Wait at most SECONDS for frontend locking"
+		"\n  -r, --read-only             - Don't setup tuner, just read state"
+		"\n"
+		"\nOptions for tuner configuration:"
+		"\n  -t, --del-sys=<"
+	);
 	table_for_each_entry(p_item, delivery_system_desc) {
 		const char *reduced = p_item->value;
 		if(strncasecmp(p_item->value, "SYS_", 4) == 0) {
@@ -670,95 +673,104 @@ static void usage(const char *progname, int32_t verbose)
 		}
 		printf("%s%s", (p_item == delivery_system_desc) ? "" : "|", reduced);
 	}
-	printf(">\n");
-	printf("                                - Select delivery type\n");
-
-	printf("  -f, --frequency=FREQUENCY     - Set frequency in Hz (in kHz for sattelite delivery system)\n");
-	printf("  -s, --symbol-rate=SYMBOLRATE  - Set symbol rate in symbol per second\n");
-	printf("  -p, --plp-id=PLPID            - Set plp id (for DVB-T2)\n");
-
-	printf("  -m, --modulation=<");
+	printf(
+		">"
+		"\n                                - Select delivery type"
+		"\n  -f, --frequency=FREQUENCY     - Set frequency in Hz (in kHz for sattelite delivery system)"
+		"\n  -s, --symbol-rate=SYMBOLRATE  - Set symbol rate in symbols per second"
+		"\n  -m, --modulation=<"
+	);
 	table_for_each_entry(p_item, fe_mod_desc) {
 		printf("%s%s", (p_item == fe_mod_desc) ? "" : "|", p_item->value);
 	}
-	printf(">\n");
-	printf("                                - Set modulation\n");
-	printf("  -n, --inversion=N             - 0 - off, 1 - on, auto by default\n");
-	printf("\n");
-	printf("Options related to satellite delivery system:\n");
-	printf("  -z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V\n");
-	printf("  -q, --diseqc=PORT             - Use DiSEqC SwitchSimple PORT\n");
-	printf("      --custom-LNB-LO=FREQUENCY - Use custom LNB local oscilator frequency in kHz\n");
+	printf(">"
+		"\n                                - Set modulation"
+		"\n  -p, --plp-id=PLPID            - Set plp id (for DVB-T2)"
+		"\n  -n, --inversion=N             - 0 - off, 1 - on, auto by default"
+		"\n"
+		"\nOptions related to satellite delivery system:"
+		"\n  -z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V"
+		"\n  -q, --diseqc=PORT             - Use DiSEqC SwitchSimple PORT"
+		"\n      --custom-LNB-LO=FREQUENCY - Use custom LNB local oscilator frequency in kHz"
+		"\n"
+		);
 	if(verbose > 0) {
-		printf("                                  Note: This option disables checking for main frequency out-of-bounds.\n");
-		printf("                                  By default the following scheme (named \"Universal\" for Ku band) is used:\n");
-		printf("                                    *  3.40- 4.20 GHz, C band       => LO:  5.15 GHz\n");
-		printf("                                    * 10.70-11.70 GHz, Ku  low band => LO:  9.75 GHz\n");
-		printf("                                    * 11.70-12.75 GHz, Ku high band => LO: 10.60 GHz\n");
-		printf("                                  Other known LNB types:\n");
-		printf("                                    * 11.70-12.20 GHz, Ku band, LO: 10.75  GHz - Standard North America\n");
-		printf("                                    * 12.20-12.70 GHz, Ku band, LO: 10.25  GHz - North America DBS\n");
-		printf("                                    *                  Ku band, LO: 10.60  GHz - from tune-s2\n");
-		printf("                                    *                  Ku band, LO: 10.745 GHz - from tune-s2\n");
-		printf("                                    *                  Ku band, LO: 10.00  GHz - \"standard\" from szap-s2\n");
-		printf("                                    *  18.2-19.2  GHz, Ka band, LO: 17.25  GHz - Norsat Ka band\n");
-		printf("                                    *  20.2-21.2  GHz, Ka band, LO: 19.25  GHz -  low Ka band\n");
-		printf("                                    *  21.2-22.2  GHz, Ka band, LO: 20.25  GHz - high Ka band\n");
+		printf(
+			  "                                  Note: This option disables checking for main frequency out-of-bounds."
+			"\n                                  By default the following scheme (named \"Universal\" for Ku band) is used:"
+			"\n                                    *  3.40- 4.20 GHz, C band       => LO:  5.15 GHz"
+			"\n                                    * 10.70-11.70 GHz, Ku  low band => LO:  9.75 GHz"
+			"\n                                    * 11.70-12.75 GHz, Ku high band => LO: 10.60 GHz"
+			"\n                                  Other known LNB types:"
+			"\n                                    * 11.70-12.20 GHz, Ku band, LO: 10.75  GHz - Standard North America"
+			"\n                                    * 12.20-12.70 GHz, Ku band, LO: 10.25  GHz - North America DBS"
+			"\n                                    *                  Ku band, LO: 10.60  GHz - from tune-s2"
+			"\n                                    *                  Ku band, LO: 10.745 GHz - from tune-s2"
+			"\n                                    *                  Ku band, LO: 10.00  GHz - \"standard\" from szap-s2"
+			"\n                                    *  18.2-19.2  GHz, Ka band, LO: 17.25  GHz - Norsat Ka band"
+			"\n                                    *  20.2-21.2  GHz, Ka band, LO: 19.25  GHz -  low Ka band"
+			"\n                                    *  21.2-22.2  GHz, Ka band, LO: 20.25  GHz - high Ka band"
+			"\n"
+		);
 	}
 
 	if(verbose > 1) {
-		printf("\n\n");
-		printf("Valid/used parameters, except frequency, for various delivery systems.\n");
-		printf("Well-known and tested types:\n");
-		printf("  * DVB-C Annex A, widely used cable standard:\n");
-		printf("    * symbol rate;\n");
-		printf("    * modulation:                 QAM_16, QAM_32, QAM_64, QAM_256\n");
-		printf("  * DVB-T:\n");
-		printf("    * bandwidth, Hz:              6000000, 7000000, 8000000\n");
-		printf("    * modulation (optional):      QPSK, QAM_16, QAM_64\n");
-		printf("  * DVB-T2:\n");
-		printf("    * bandwidth, Hz:              1712000, 5000000, 6000000, 7000000, 8000000, 10000000\n");
-		printf("    * modulation (optional):      QPSK, QAM_16, QAM_64, QAM_256\n");
-		printf("    * stream id/plp id;\n");
-		printf("  * DVB-S:\n");
-		printf("    * symbol rate;\n");
-		printf("    * modulation (optional):      QPSK\n");
-		printf("  * DVB-S2/S2X:\n");
-		printf("    * symbol rate;\n");
-		printf("    * modulation S2  (optional):  QPSK, PSK_8, APSK_16, APSK_32\n");
-		printf("    * modulation S2X (optional?): APSK_8_L, APSK_16_L, APSK_32_L, APSK_64, APSK_64_L\n");
-		printf("    * stream id (note: not supported now);\n");
+		printf("\n"
+			"\nValid/used parameters, except frequency, for various delivery systems."
+			"\nWell-known and tested types:"
+			"\n  * DVB-C Annex A, widely used cable standard:"
+			"\n    * symbol rate;"
+			"\n    * modulation:                 QAM_16, QAM_32, QAM_64, QAM_256"
+			"\n  * DVB-T:"
+			"\n    * bandwidth, Hz:              6000000, 7000000, 8000000"
+			"\n    * modulation (optional):      QPSK, QAM_16, QAM_64"
+			"\n  * DVB-T2:"
+			"\n    * bandwidth, Hz:              1712000, 5000000, 6000000, 7000000, 8000000, 10000000"
+			"\n    * modulation (optional):      QPSK, QAM_16, QAM_64, QAM_256"
+			"\n    * stream id/plp id;"
+			"\n  * DVB-S:"
+			"\n    * symbol rate;"
+			"\n    * modulation (optional):      QPSK"
+			"\n  * DVB-S2/S2X:"
+			"\n    * symbol rate;"
+			"\n    * modulation S2  (optional):  QPSK, PSK_8, APSK_16, APSK_32"
+			"\n    * modulation S2X (optional?): APSK_8_L, APSK_16_L, APSK_32_L, APSK_64, APSK_64_L"
+			"\n    * stream id (note: not supported now);"
+			"\n"
+		);
 	}
 
 	if(verbose > 2) {
-		printf("\n");
-		printf("A group of delivery systems known only theoretically:\n");
-		printf("  * DVB-C Annex B, optimized for 6MHz, and is used in Japan:\n");
-		printf("    * modulation:             QAM_64\n");
-		printf("  * DVB-C Annex C, only used on a few Countries like the United States:\n");
-		printf("    * symbol rate;\n");
-		printf("    * modulation:             QAM_16, QAM_32, QAM_64, QAM_256\n");
-		printf("  * DVB-C2:\n");
-		printf("    * symbol rate;\n");
-		printf("    * modulation:             QPSK, QAM_16, QAM_32, QAM_64, QAM_256, QAM_1024, QAM_4096\n");
-		printf("    * stream id;\n");
-		printf("  * ATSC, terrestrial (note: supported):\n");
-		printf("    * bandwidths (optional?): 6000000\n");
-		printf("    * modulation (optional?): VSB_8, VSB_16\n");
-		printf("  * ATSC-M/H, terrestrial;\n");
-		printf("  * ISDB-T, terrestrial:\n");
-		printf("    * bandwidth, Hz:          5000000, 6000000, 7000000, 8000000\n");
-		printf("    * modulation (optional?): QPSK, DQPSK, QAM_16, QAM_64\n");
-		printf("  * ISDB-S, setellite:\n");
-		printf("    * modulation (optional):  PSK_8, QPSK, BPSK (?)\n");
-		printf("  * ISDB-C, cable;\n");
-		printf("  * DTMB, terrestrial:\n");
-		printf("    * bandwidth, Hz:          5000000, 6000000, 7000000, 8000000\n");
-		printf("    * modulation (optional?): QAM_16, QAM_32, QAM_64, QAM_4_NR, 4-QAM (?)\n");
-		printf("  * DSS, setellite;\n");
-		printf("  * DAB, terrestrial(?);\n");
-		printf("  * DVB-H, terrestrial;\n");
-		printf("  * DVB-S Turbo, setellite;\n");
+		printf(
+			"\nA group of delivery systems known only theoretically:"
+			"\n  * DVB-C Annex B, optimized for 6MHz, and is used in Japan:"
+			"\n    * modulation:             QAM_64"
+			"\n  * DVB-C Annex C, only used on a few Countries like the United States:"
+			"\n    * symbol rate;"
+			"\n    * modulation:             QAM_16, QAM_32, QAM_64, QAM_256"
+			"\n  * DVB-C2:"
+			"\n    * symbol rate;"
+			"\n    * modulation:             QPSK, QAM_16, QAM_32, QAM_64, QAM_256, QAM_1024, QAM_4096"
+			"\n    * stream id;"
+			"\n  * ATSC, terrestrial (note: supported):"
+			"\n    * bandwidths (optional?): 6000000"
+			"\n    * modulation (optional?): VSB_8, VSB_16"
+			"\n  * ATSC-M/H, terrestrial;"
+			"\n  * ISDB-T, terrestrial:"
+			"\n    * bandwidth, Hz:          5000000, 6000000, 7000000, 8000000"
+			"\n    * modulation (optional?): QPSK, DQPSK, QAM_16, QAM_64"
+			"\n  * ISDB-S, setellite:"
+			"\n    * modulation (optional):  PSK_8, QPSK, BPSK (?)"
+			"\n  * ISDB-C, cable;"
+			"\n  * DTMB, terrestrial:"
+			"\n    * bandwidth, Hz:          5000000, 6000000, 7000000, 8000000"
+			"\n    * modulation (optional?): QAM_16, QAM_32, QAM_64, QAM_4_NR, 4-QAM (?)"
+			"\n  * DSS, setellite;"
+			"\n  * DAB, terrestrial(?);"
+			"\n  * DVB-H, terrestrial;"
+			"\n  * DVB-S Turbo, setellite;"
+			"\n"
+		);
 	}
 
 	return;
