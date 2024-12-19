@@ -628,7 +628,7 @@ static void usage(char *progname, int32_t verbose)
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("Setup or read status of Linux DVB API v5 tuner frontends.\n\n");
 	printf("Common options:\n");
-	printf("  -h, --help                  - Print this message\n");
+	printf("  -h, --help                  - Print this message, use verbose mode ('-v') for printing more info\n");
 	printf("  -V, --version               - Print version\n");
 	printf("  -v, --verbose               - Be verbose\n");
 	printf("  -d, --adapter=A_ID          - Choose dvb adapter /dev/dvb/adapter<A_ID>/frontend0 (0 by default)\n");
@@ -715,6 +715,7 @@ int main(int argc, char **argv)
 	int32_t                diseqc_port = -1;
 	int32_t                read_only = 0;
 	int32_t                custom_LNB_LO = -1;
+	int32_t                print_help = 0;
 	static struct option   long_options[] = {
 		{"help",          no_argument,        0, 'h'},
 		{"version",       no_argument,        0, 'V'},
@@ -743,8 +744,7 @@ int main(int argc, char **argv)
 	while((opt = getopt_long(argc, argv, "hVivd:t:f:s:m:p:n:cw:z:q:r", long_options, &option_index)) != -1) {
 		switch(opt) {
 			case 'h':
-				usage(argv[0], verbose);
-				return 0;
+				print_help = 1;
 				break;
 			case 'V':
 				version();
@@ -809,6 +809,10 @@ int main(int argc, char **argv)
 				return -3;
 				break;
 		}
+	}
+	if(print_help == 1) {
+		usage(argv[0], verbose);
+		return 0;
 	}
 
 	if(dvb_openFronend(adapter_id, frontend_id, &fd_frontend, read_only) != 0) {
@@ -983,11 +987,11 @@ int main(int argc, char **argv)
 
 		if(status & FE_HAS_LOCK) {
 			has_lock = 1;
-			printf("Locked success!\n");
+			printf("Locked successful!\n");
 			break;
 		} else {
 			sleep(1);
-//			usleep(100000);
+			// usleep(100000);
 		}
 		if(wait_seconds == 0) {
 			break;
