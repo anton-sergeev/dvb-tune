@@ -628,14 +628,14 @@ static void usage(char *progname, int32_t verbose)
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("Setup or read status of Linux DVB API v5 tuner frontends.\n\n");
 	printf("Common options:\n");
-	printf("  -h, --help                    - Print this message\n");
-	printf("  -V, --version                 - Print version\n");
-	printf("  -v, --verbose                 - Be verbose\n");
-	printf("  -d, --device=ID               - Choose dvb device /dev/dvb/device<ID>/frontend0\n");
-	printf("  -i, --info                    - Print tuner info\n");
-	printf("  -c, --close-fe                - Close frontend at the end (infinity wait is default)\n");
-	printf("  -w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
-	printf("  -r, --read-only               - Don't setup tuner, just read state\n");
+	printf("  -h, --help                  - Print this message\n");
+	printf("  -V, --version               - Print version\n");
+	printf("  -v, --verbose               - Be verbose\n");
+	printf("  -d, --adapter=ID            - Choose dvb adapter /dev/dvb/adapter<ID>/frontend0\n");
+	printf("  -i, --info                  - Print tuner info\n");
+	printf("  -c, --close-fe              - Exit after locking try\n");
+	printf("  -w, --wait-seconds=SECONDS  - Wait at most SECONDS for frontend locking\n");
+	printf("  -r, --read-only             - Don't setup tuner, just read state\n");
 	printf("\n");
 	printf("Options for tuner configuration:\n");
 	printf("  -t, --del-sys=<");
@@ -696,7 +696,7 @@ int main(int argc, char **argv)
 {
 	int32_t                fd_frontend;
 	int32_t                opt;
-	uint32_t               device = 0;
+	uint32_t               adapter = 0;
 	int32_t                show_tuner_info = 0;
 	int32_t                verbose = 0;
 	fe_delivery_system_t   delivery_system = SYS_DVBC_ANNEX_A;
@@ -706,8 +706,8 @@ int main(int argc, char **argv)
 	uint32_t               plp_id = 0;
 	int32_t                option_index = 0;
 	int32_t                inversion = INVERSION_AUTO;
-	int32_t                dont_close_fe = 1;
-	int32_t                wait_count = -1;
+	int32_t                exit_after_tune = 0;
+	int32_t                wait_seconds = -1;
 	int32_t                has_lock = 0;
 	int32_t                polarization = SEC_VOLTAGE_13;//0 - horizontal, 1 - vertical
 	int32_t                diseqc_port = -1;
@@ -718,7 +718,8 @@ int main(int argc, char **argv)
 		{"version",       no_argument,        0, 'V'},
 		{"info",          no_argument,        0, 'i'},
 		{"verbose",       no_argument,        0, 'v'},
-		{"device",        required_argument,  0, 'd'},
+		{"adapter",       required_argument,  0, 'd'},
+		{"device",        required_argument,  0, 'd'}, // keep long option for compatability
 		{"del-sys",       required_argument,  0, 't'},
 		{"frequency",     required_argument,  0, 'f'},
 		{"symbol-rate",   required_argument,  0, 's'},
@@ -726,7 +727,8 @@ int main(int argc, char **argv)
 		{"plp-id",        required_argument,  0, 'p'},
 		{"inversion",     required_argument,  0, 'n'},
 		{"close-fe",      no_argument,        0, 'c'},
-		{"wait-count",    required_argument,  0, 'w'},
+		{"wait-seconds",  required_argument,  0, 'w'},
+		{"wait-count",    required_argument,  0, 'w'}, // keep long option for compatability
 		{"polarization",  required_argument,  0, 'z'},
 		{"pol",           required_argument,  0, 'z'},
 		{"diseqc",        required_argument,  0, 'q'},
@@ -752,7 +754,7 @@ int main(int argc, char **argv)
 				verbose = 1;
 				break;
 			case 'd':
-				device = atoi(optarg);
+				adapter = atoi(optarg);
 				break;
 			case 't':
 				delivery_system = parse_delivery(optarg);
@@ -779,10 +781,10 @@ int main(int argc, char **argv)
 				break;
 			}
 			case 'c':
-				dont_close_fe = 0;
+				exit_after_tune = 1;
 				break;
 			case 'w':
-				wait_count = atoi(optarg);
+				wait_seconds = atoi(optarg);
 				break;
 			case 'z':
 				polarization = parse_polarization_name(optarg);
@@ -803,8 +805,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(dvb_openFronend(device, 0, &fd_frontend, read_only) != 0) {
-		printf("%s()[%d]: Error open device=%d frontend\n", __func__, __LINE__, device);
+	if(dvb_openFronend(adapter, 0, &fd_frontend, read_only) != 0) {
+		printf("Error open adapter=%d frontend\n", adapter);
 		return -1;
 	}
 
@@ -975,22 +977,24 @@ int main(int argc, char **argv)
 
 		if(status & FE_HAS_LOCK) {
 			has_lock = 1;
-			printf("%s()[%d]: Locked success!!!\n", __func__, __LINE__);
+			printf("Locked success!\n");
 			break;
 		} else {
 			sleep(1);
 //			usleep(100000);
 		}
-		if(wait_count == 0) {
+		if(wait_seconds == 0) {
 			break;
-		} else if(wait_count > 0) {
-			wait_count--;
+		} else if(wait_seconds > 0) {
+			wait_seconds--;
 		}
 	}
-	while(dont_close_fe) {
-		sleep(1);
-		if(verbose) {
-			dvb_printLockInfo(fd_frontend, NULL);
+	if(!exit_after_tune) {
+		while(true) {
+			sleep(1);
+			if(verbose) {
+				dvb_printLockInfo(fd_frontend, NULL);
+			}
 		}
 	}
 
