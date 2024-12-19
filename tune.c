@@ -659,7 +659,7 @@ static void usage(char *progname, int32_t verbose)
 	printf("  -w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
 	printf("  -z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V\n");
 	printf("  -n, --inversion=N             - 0 - off, 1 - on, auto by default\n");
-	printf("  -q, --dyseqc=PORT             - Use dyseqc SwitchSimple PORT (for satelite delivery system only)\n");
+	printf("  -q, --diseqc=PORT             - Use DiSEqC SwitchSimple PORT (for satelite delivery system only)\n");
 	printf("      --custom-LNB-LO=FREQUENCY - Use custom LNB local oscilator frequency in kHz.\n");
 	if(verbose > 0) {
 		printf("                                  Note: This option disables checking for main frequency out-of-bounds.\n");
@@ -707,7 +707,7 @@ int main(int argc, char **argv)
 	int32_t                wait_count = -1;
 	int32_t                has_lock = 0;
 	int32_t                polarization = SEC_VOLTAGE_13;//0 - horizontal, 1 - vertical
-	int32_t                dyseqc_port = -1;
+	int32_t                diseqc_port = -1;
 	int32_t                read_only = 0;
 	int32_t                custom_LNB_LO = -1;
 	static struct option   long_options[] = {
@@ -726,7 +726,7 @@ int main(int argc, char **argv)
 		{"wait-count",    required_argument,  0, 'w'},
 		{"polarization",  required_argument,  0, 'z'},
 		{"pol",           required_argument,  0, 'z'},
-		{"dyseqc",        required_argument,  0, 'q'},
+		{"diseqc",        required_argument,  0, 'q'},
 		{"read-only",     no_argument,        0, 'r'},
 		{"custom-LNB-LO", required_argument,  0, 0x10000000},
 		{0, 0, 0, 0},
@@ -785,7 +785,7 @@ int main(int argc, char **argv)
 				polarization = parse_polarization_name(optarg);
 				break;
 			case 'q':
-				dyseqc_port = atoi(optarg);
+				diseqc_port = atoi(optarg);
 				break;
 			case 'r':
 				read_only = 1;
@@ -872,9 +872,9 @@ int main(int argc, char **argv)
 			uint32_t freqLO;
 			uint32_t tone = SEC_TONE_OFF;
 
-			//diseqc
-			if((dyseqc_port >= 0) && (dyseqc_port < 4)) {
-				dvb_diseqcSetup(fd_frontend, frequency, diseqcSwitchSimple, dyseqc_port, polarization);
+			// DiSEqC:
+			if((diseqc_port >= 0) && (diseqc_port < 4)) {
+				dvb_diseqcSetup(fd_frontend, frequency, diseqcSwitchSimple, diseqc_port, polarization);
 			}
 
 			if(custom_LNB_LO > 0) {
