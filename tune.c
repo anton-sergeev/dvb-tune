@@ -625,15 +625,19 @@ int dvb_diseqcSetup(int frontend_fd, uint32_t frequency, diseqcSwitchType_t type
 
 static void usage(char *progname, int32_t verbose)
 {
-
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("Setup or read status of Linux DVB API v5 tuner frontends.\n\n");
-	printf("Options:\n");
+	printf("Common options:\n");
 	printf("  -h, --help                    - Print this message\n");
 	printf("  -V, --version                 - Print version\n");
 	printf("  -v, --verbose                 - Be verbose\n");
 	printf("  -d, --device=ID               - Choose dvb device /dev/dvb/device<ID>/frontend0\n");
 	printf("  -i, --info                    - Print tuner info\n");
+	printf("  -c, --close-fe                - Close frontend at the end (infinity wait is default)\n");
+	printf("  -w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
+	printf("  -r, --read-only               - Don't setup tuner, just read state\n");
+	printf("\n");
+	printf("Options for tuner configuration:\n");
 	printf("  -t, --del-sys=<");
 	table_for_each_entry(p_item, delivery_system_desc) {
 		const char *reduced = p_item->value;
@@ -655,12 +659,12 @@ static void usage(char *progname, int32_t verbose)
 	}
 	printf(">\n");
 	printf("                                - Set modulation\n");
-	printf("  -c, --close-fe                - Close frontend at the end (infinity wait is default)\n");
-	printf("  -w, --wait-count=WAIT_COUNT   - Wait at most WAIT_COUNT times for frontend locking\n");
-	printf("  -z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V\n");
 	printf("  -n, --inversion=N             - 0 - off, 1 - on, auto by default\n");
-	printf("  -q, --diseqc=PORT             - Use DiSEqC SwitchSimple PORT (for satelite delivery system only)\n");
-	printf("      --custom-LNB-LO=FREQUENCY - Use custom LNB local oscilator frequency in kHz.\n");
+	printf("\n");
+	printf("Options related to satellite delivery system:\n");
+	printf("  -z, --polarization=N, --pol=N - 0/h/horizontal/left - 18V, 1/v/vrtical/right - 13V\n");
+	printf("  -q, --diseqc=PORT             - Use DiSEqC SwitchSimple PORT\n");
+	printf("      --custom-LNB-LO=FREQUENCY - Use custom LNB local oscilator frequency in kHz\n");
 	if(verbose > 0) {
 		printf("                                  Note: This option disables checking for main frequency out-of-bounds.\n");
 		printf("                                  By default the following scheme (named \"Universal\" for Ku band) is used:\n");
@@ -677,7 +681,6 @@ static void usage(char *progname, int32_t verbose)
 		printf("                                    *  20.2-21.2  GHz, Ka band, LO: 19.25  GHz -  low Ka band\n");
 		printf("                                    *  21.2-22.2  GHz, Ka band, LO: 20.25  GHz - high Ka band\n");
 	}
-	printf("  -r, --read-only               - Don't setup tuner, just read state\n");
 
 	return;
 }
