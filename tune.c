@@ -81,7 +81,7 @@ typedef struct {
 /******************************************************************
 * STATIC DATA                                                     *
 *******************************************************************/
-const char *version_str = "1.1 (2024-12-17)";
+const char *version_str = "1.2 (2024-12-19)";
 static bool alive = true;
 
 table_UintStr_t fe_typeNames[] = {
