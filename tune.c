@@ -570,7 +570,7 @@ int32_t dvb_openFronend(uint32_t adap, uint32_t fe, int32_t *fd, int32_t read_on
 			printf("Opened %s\n", buf);
 			return 0;
 		}
-		printf("fail\n");
+		// printf("fail\n");
 	}
 
 	return -1;
@@ -631,7 +631,8 @@ static void usage(char *progname, int32_t verbose)
 	printf("  -h, --help                  - Print this message\n");
 	printf("  -V, --version               - Print version\n");
 	printf("  -v, --verbose               - Be verbose\n");
-	printf("  -d, --adapter=ID            - Choose dvb adapter /dev/dvb/adapter<ID>/frontend0\n");
+	printf("  -d, --adapter=A_ID          - Choose dvb adapter /dev/dvb/adapter<A_ID>/frontend0 (0 by default)\n");
+	printf("      --frontend=F_ID         - Choose dvb frontend /dev/dvb/adapter0/frontend<F_ID> (0 by default)\n");
 	printf("  -i, --info                  - Print tuner info\n");
 	printf("  -c, --close-fe              - Exit after locking try\n");
 	printf("  -w, --wait-seconds=SECONDS  - Wait at most SECONDS for frontend locking\n");
@@ -696,7 +697,8 @@ int main(int argc, char **argv)
 {
 	int32_t                fd_frontend;
 	int32_t                opt;
-	uint32_t               adapter = 0;
+	uint32_t               adapter_id = 0;
+	uint32_t               frontend_id = 0;
 	int32_t                show_tuner_info = 0;
 	int32_t                verbose = 0;
 	fe_delivery_system_t   delivery_system = SYS_DVBC_ANNEX_A;
@@ -734,6 +736,7 @@ int main(int argc, char **argv)
 		{"diseqc",        required_argument,  0, 'q'},
 		{"read-only",     no_argument,        0, 'r'},
 		{"custom-LNB-LO", required_argument,  0, 0x10000000},
+		{"frontend",      required_argument,  0, 0x10000001},
 		{0, 0, 0, 0},
 	};
 
@@ -754,7 +757,7 @@ int main(int argc, char **argv)
 				verbose = 1;
 				break;
 			case 'd':
-				adapter = atoi(optarg);
+				adapter_id = atoi(optarg);
 				break;
 			case 't':
 				delivery_system = parse_delivery(optarg);
@@ -798,6 +801,9 @@ int main(int argc, char **argv)
 			case 0x10000000: // custom-LNB-LO
 				custom_LNB_LO = atoi(optarg);
 				break;
+			case 0x10000001: // frontend id
+				frontend_id = atoi(optarg);
+				break;
 			default:
 				usage(argv[0], verbose);
 				return -3;
@@ -805,8 +811,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(dvb_openFronend(adapter, 0, &fd_frontend, read_only) != 0) {
-		printf("Error open adapter=%d frontend\n", adapter);
+	if(dvb_openFronend(adapter_id, frontend_id, &fd_frontend, read_only) != 0) {
+		printf("Error open adapter=%d frontend=%d\n", adapter_id, frontend_id);
 		return -1;
 	}
 
