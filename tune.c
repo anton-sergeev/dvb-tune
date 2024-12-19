@@ -14,6 +14,7 @@
 #include <string.h>
 #include <strings.h>
 #include <errno.h>
+#include <signal.h>
 //linux
 //#include <linux/dvb/frontend.h>
 //#include <linux/version.h>
@@ -81,6 +82,7 @@ typedef struct {
 * STATIC DATA                                                     *
 *******************************************************************/
 const char *version_str = "1.1 (2024-12-17)";
+static bool alive = true;
 
 table_UintStr_t fe_typeNames[] = {
 	{FE_QPSK, "DVB-S"},
@@ -623,7 +625,28 @@ int dvb_diseqcSetup(int frontend_fd, uint32_t frequency, diseqcSwitchType_t type
 	return 0;
 }
 
-static void usage(char *progname, int32_t verbose)
+static void handler(int sig, siginfo_t *si, void *uc)
+{
+	(void)si;
+	(void)uc;
+	(void)sig;
+	alive = false;
+}
+
+static void setup_sighandler(const char *progname)
+{
+	struct sigaction sa;
+	// Setup SIGINT signal handler for gracefull shutdown.
+	sa.sa_flags = SA_SIGINFO;
+	sa.sa_sigaction = handler;
+	sigemptyset(&sa.sa_mask); /* the Signal no would be masked. */
+	if(sigaction(SIGINT, &sa, NULL) != 0) {
+		fprintf(stderr, "%s: Could not sigaction: %s\n", progname, strerror(errno));
+		exit(1);
+	}
+}
+
+static void usage(const char *progname, int32_t verbose)
 {
 	printf("Usage: %s [OPTIONS]\n", progname);
 	printf("Setup or read status of Linux DVB API v5 tuner frontends.\n\n");
@@ -870,6 +893,8 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	setup_sighandler(argv[0]);
+
 	if(dvb_openFronend(adapter_id, frontend_id, &fd_frontend, read_only) != 0) {
 		printf("Error open adapter=%d frontend=%d\n", adapter_id, frontend_id);
 		return -1;
@@ -1036,7 +1061,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	while(1) {
+	while(alive) {
 		uint32_t status;
 		dvb_printLockInfo(fd_frontend, &status);
 
@@ -1055,7 +1080,7 @@ int main(int argc, char **argv)
 		}
 	}
 	if(!exit_after_tune) {
-		while(true) {
+		while(alive) {
 			sleep(1);
 			if(verbose) {
 				dvb_printLockInfo(fd_frontend, NULL);
